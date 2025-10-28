@@ -9,23 +9,27 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Iterator;
 import java.util.Set;
+import java.io.EOFException;
 
 public class ServerReceiverThread implements Runnable {
     private Socket socket = null;
+    private ObjectInputStream ois = null;
+    private ObjectOutputStream oos = null;
     public ServerReceiverThread(Socket socket) {
         this.socket = socket;
     }
     public void run() {
-        while(!Thread.currentThread().isInterrupted()){
-            try {
-                if(!socket.isClosed()){
-                    ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-                    Message message = (Message) in.readObject();
+        try {
+            ois = new ObjectInputStream(socket.getInputStream());
+            oos = new ObjectOutputStream(socket.getOutputStream());
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    Message message = (Message) ois.readObject();
                     switch (message.getMessageType()) {
                         case MessageType.COMMON_CHAT_MESSAGE:
                             System.out.println(message.getSender()
                                     + "对" + message.getReceiver()
-                                    + "说：" + message.getContent());
+                                    + "说:" + message.getContent());
                             message.setTime(new java.util.Date());
                             DBUtil.insertChatMessage(message.getSender(),message.getReceiver(),message.getContent(),message.getTime());
                             Socket receiverSocket = YYchatServer.getUserSocket(message.getReceiver());
@@ -40,6 +44,7 @@ public class ServerReceiverThread implements Runnable {
                             System.out.println(message.getSender() + "socket关闭");
                             socket.close();
                             YYchatServer.getUserSocketMap().remove(message.getSender());
+                            Thread.currentThread().interrupt();
                             break;
                         case MessageType.REQUEST_ONLINE_FRIENDS:
                             Set<String> onlineFriendSet = YYchatServer.getUserSocketMap().keySet();
@@ -56,7 +61,7 @@ public class ServerReceiverThread implements Runnable {
                             message.setSender("Server");
                             message.setMessageType(MessageType.RESPONSE_ONLINE_FRIENDS);
                             message.setContent(onlineFriends);
-                            sendMessage(socket, message);
+                            oos.writeObject(message);
                             break;
                         case MessageType.NEW_ONLINE_FRIEND:
                             message.setMessageType(MessageType.NEW_ONLINE_TO_ALL_FRIENDS);
@@ -74,7 +79,7 @@ public class ServerReceiverThread implements Runnable {
                             message.setMessageType(MessageType.RESPONSE_FRIEND_LIST);
                             message.setReceiver(message.getSender());
                             message.setSender("Server");
-                            sendMessage(socket, message);
+                            oos.writeObject(message);
                             break;
                         case MessageType.USER_ADD_NEW_FRIEND:
                             String sender = message.getSender();
@@ -100,7 +105,7 @@ public class ServerReceiverThread implements Runnable {
                             message.setReceiver(sender);
                             message.setSender("Server");
                             System.out.println(message.getMessageType());
-                            sendMessage(socket, message);
+                            oos.writeObject(message);
                             break;
                         case MessageType.IS_FRIEND_ONLINE:
                             Set<String> onlineFriendSet3 = YYchatServer.getUserSocketMap().keySet();
@@ -112,20 +117,33 @@ public class ServerReceiverThread implements Runnable {
                             }
                             message.setReceiver(message.getSender());
                             message.setSender("Server");
-                            sendMessage(socket, message);
+                            oos.writeObject(message);
                         break;
                     }
+                } catch (java.io.EOFException e) {
+                    System.out.println("Client disconnected abruptly");
+                    break;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    break;
                 }
-                else{
-                    Thread.currentThread().interrupt();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ois != null) ois.close();
+                if (oos != null) oos.close();
+                if (!socket.isClosed()) {
+                    socket.close();
                 }
-            }catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
     public void sendMessage(Socket socket,Message message){
-        ObjectOutputStream out = null;
+        ObjectOutputStream out;
         try{
             out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(message);

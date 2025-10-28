@@ -89,7 +89,8 @@ public class FriendList extends JFrame {
                 }
                 friendLabel[i].addMouseListener(new MouseListener() {
                     public void mouseClicked(MouseEvent e) {
-                        if(e.getClickCount() ==2 && e.getSource() instanceof JLabel label){
+                        if(e.getClickCount() == 2 && e.getSource() instanceof JLabel){
+                            JLabel label = (JLabel) e.getSource();
                             String friendName = label.getText();
                             FriendChat chat = new FriendChat(name,friendName);
                             friendChatMap.put(name + "to" + friendName,chat);
@@ -101,13 +102,15 @@ public class FriendList extends JFrame {
                     public void mouseReleased(MouseEvent e) {}
                     @Override
                     public void mouseEntered(MouseEvent e) {
-                        if(e.getSource() instanceof JLabel label){
+                        if(e.getSource() instanceof JLabel){
+                            JLabel label = (JLabel) e.getSource();
                             label.setForeground(Color.red);
                         }
                     }
                     @Override
                     public void mouseExited(MouseEvent e) {
-                        if(e.getSource() instanceof JLabel label){
+                        if(e.getSource() instanceof JLabel){
+                            JLabel label = (JLabel) e.getSource();
                             label.setForeground(Color.black);
                         }
                     }
