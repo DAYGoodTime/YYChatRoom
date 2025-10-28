@@ -10,19 +10,19 @@ import java.net.Socket;
 import java.util.Iterator;
 import java.util.Set;
 
-public class ServerReceiverThread extends Thread {
+public class ServerReceiverThread implements Runnable {
     private Socket socket = null;
     public ServerReceiverThread(Socket socket) {
         this.socket = socket;
     }
     public void run() {
-        while(!this.isInterrupted()){
+        while(!Thread.currentThread().isInterrupted()){
             try {
                 if(!socket.isClosed()){
                     ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                     Message message = (Message) in.readObject();
                     switch (message.getMessageType()) {
-                        case MessageType.COMMON_CHAT_MESSAGE -> {
+                        case MessageType.COMMON_CHAT_MESSAGE:
                             System.out.println(message.getSender()
                                     + "对" + message.getReceiver()
                                     + "说：" + message.getContent());
@@ -35,13 +35,13 @@ public class ServerReceiverThread extends Thread {
                             } else {
                                 System.out.println(message.getReceiver() + "不在线上");
                             }
-                        }
-                        case MessageType.EXIT -> {
+                            break;
+                        case MessageType.EXIT:
                             System.out.println(message.getSender() + "socket关闭");
                             socket.close();
                             YYchatServer.getUserSocketMap().remove(message.getSender());
-                        }
-                        case MessageType.REQUEST_ONLINE_FRIENDS -> {
+                            break;
+                        case MessageType.REQUEST_ONLINE_FRIENDS:
                             Set<String> onlineFriendSet = YYchatServer.getUserSocketMap().keySet();
                             Iterator<String> it = onlineFriendSet.iterator();
                             StringBuilder onlineFriendBuilder = new StringBuilder();
@@ -57,26 +57,26 @@ public class ServerReceiverThread extends Thread {
                             message.setMessageType(MessageType.RESPONSE_ONLINE_FRIENDS);
                             message.setContent(onlineFriends);
                             sendMessage(socket, message);
-                        }
-                        case MessageType.NEW_ONLINE_FRIEND -> {
+                            break;
+                        case MessageType.NEW_ONLINE_FRIEND:
                             message.setMessageType(MessageType.NEW_ONLINE_TO_ALL_FRIENDS);
-                            Set onlineFriendSet = YYchatServer.getUserSocketMap().keySet();
-                            Iterator<String> it = onlineFriendSet.iterator();
-                            while (it.hasNext()) {
-                                String friendName = it.next();
+                            Set<String> onlineFriendSet2 = YYchatServer.getUserSocketMap().keySet();
+                            Iterator<String> it2 = onlineFriendSet2.iterator();
+                            while (it2.hasNext()) {
+                                String friendName = it2.next();
                                 message.setReceiver(friendName);
                                 Socket friendSocket = YYchatServer.getUserSocket(friendName);
                                 sendMessage(friendSocket, message);
                             }
-                        }
-                        case MessageType.REQUEST_FRIEND_LIST -> {
+                        break;
+                        case MessageType.REQUEST_FRIEND_LIST:
                             message.setContent(DBUtil.getAllFriends(message.getSender(),1));
                             message.setMessageType(MessageType.RESPONSE_FRIEND_LIST);
                             message.setReceiver(message.getSender());
                             message.setSender("Server");
                             sendMessage(socket, message);
-                        }
-                        case MessageType.USER_ADD_NEW_FRIEND -> {
+                            break;
+                        case MessageType.USER_ADD_NEW_FRIEND:
                             String sender = message.getSender();
                             System.out.println("<UNK>" + sender + "<UNK>");
                             //是否拥有这名用户
@@ -101,10 +101,10 @@ public class ServerReceiverThread extends Thread {
                             message.setSender("Server");
                             System.out.println(message.getMessageType());
                             sendMessage(socket, message);
-                        }
-                        case MessageType.IS_FRIEND_ONLINE -> {
-                            Set<String> onlineFriendSet = YYchatServer.getUserSocketMap().keySet();
-                            if(onlineFriendSet.contains(message.getContent())){
+                            break;
+                        case MessageType.IS_FRIEND_ONLINE:
+                            Set<String> onlineFriendSet3 = YYchatServer.getUserSocketMap().keySet();
+                            if(onlineFriendSet3.contains(message.getContent())){
                                 message.setMessageType(MessageType.IS_FRIEND_ONLINE_SUCCESS);
                             }
                             else{
@@ -113,11 +113,11 @@ public class ServerReceiverThread extends Thread {
                             message.setReceiver(message.getSender());
                             message.setSender("Server");
                             sendMessage(socket, message);
-                        }
+                        break;
                     }
                 }
                 else{
-                    this.interrupt();
+                    Thread.currentThread().interrupt();
                 }
             }catch (Exception e) {
                 e.printStackTrace();

@@ -9,9 +9,12 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class YYchatServer {
     private static HashMap<String,Socket> userSocketMap = new HashMap<>();
+    private static ExecutorService threadPool = Executors.newFixedThreadPool(10);
 
     public YYchatServer(){
         try{
@@ -38,7 +41,7 @@ public class YYchatServer {
                         message.setMessageType(MessageType.LOGIN_VALIDATE_SUCCESS);
                         out.writeObject(message);
                         userSocketMap.put(user.getUserName(), socket);
-                        new ServerReceiverThread(socket).start();
+                        new ServerReceiverThread(scoket).start();
                         System.out.println("启动线程成功！");
                     }
                     else{
