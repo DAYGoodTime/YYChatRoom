@@ -22,4 +22,5 @@ public interface MessageType {
     String IS_FRIEND_ONLINE = "18";
     String IS_FRIEND_ONLINE_SUCCESS = "19";
     String IS_FRIEND_ONLINE_FAILURE = "20";
+    String REQUEST_USER_LIST = "21";
 }

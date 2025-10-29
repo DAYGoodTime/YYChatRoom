@@ -110,6 +110,9 @@ public class ClientReceiverThreadUDP extends MessageThread {
                 case MessageType.IS_FRIEND_ONLINE_FAILURE:
                     handleIsFriendOnlineFailure(message);
                     break;
+                case MessageType.REQUEST_USER_LIST:
+                    handelRequestUnknownFriends(message);
+                    break;
 
                 default:
                     System.out.println("未处理的UDP消息类型: " + message.getMessageType());
@@ -137,8 +140,25 @@ public class ClientReceiverThreadUDP extends MessageThread {
             if (chat != null) {
                 chat.append(message);
             } else {
-                System.out.println("请打开 " + chatKey + " 的聊天界面");
-                // 可以在这里添加自动打开聊天窗口的逻辑
+                System.out.println("自动创建聊天窗口: " + chatKey);
+
+                // 获取UDP连接对象
+                YYchatClientConnectionUDP udpConnection =
+                        (YYchatClientConnectionUDP) ClientMain.getClient().getConnection();
+
+                // 在EDT线程中创建聊天窗口
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        // 创建新的聊天窗口
+                        FriendChat newChat = new FriendChat(receiver, sender, udpConnection);
+                        // 将聊天窗口存储到FriendList的map中
+                        FriendList.getFriendChatMap().put(chatKey, newChat);
+                        // 显示消息
+                        newChat.append(message);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -153,7 +173,7 @@ public class ClientReceiverThreadUDP extends MessageThread {
             if (friendList != null && message.isJsonMessage()) {
                 JSONArray list = message.getJson().getJSONArray("list");
                 System.out.println("收到在线好友列表: " + list.toJSONString(0));
-                if(!list.isEmpty()){
+                if (!list.isEmpty()) {
                     friendList.activeOnlineFriendIcon(list.toList(String.class));
                 }
             } else {
@@ -255,6 +275,26 @@ public class ClientReceiverThreadUDP extends MessageThread {
             e.printStackTrace();
         }
     }
+
+    private void handelRequestUnknownFriends(Message message) {
+        try {
+            String receiver = message.getReceiver();
+            FriendList friendList = ClientMain.getClient().getFriendList().get(receiver);
+
+            if (friendList != null && message.isJsonMessage()) {
+                JSONArray list = message.getJson().getJSONArray("list");
+                System.out.println("收到陌生人列表: " + list.toJSONString(0));
+                if (!list.isEmpty()) {
+                    friendList.initStrangerPanel(list.toList(String.class),false);
+                }
+            } else {
+                System.out.println("未找到陌生人窗口");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void stopThread() {
         this.isRunning = false;

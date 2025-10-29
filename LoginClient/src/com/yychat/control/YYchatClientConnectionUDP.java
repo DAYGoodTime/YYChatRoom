@@ -274,6 +274,22 @@ public class YYchatClientConnectionUDP implements Connection {
         }
     }
 
+    public void requestUnknownFriends(String username) {
+        if (!isConnected) {
+            System.out.println("客户端未连接，无法请求好友列表");
+            return;
+        }
+        try {
+            Message message = new Message();
+            message.setSender(username);
+            message.setReceiver(Receiver.Server.getStr());
+            message.setMessageType(MessageType.REQUEST_USER_LIST);
+            sendMessageToServer(message); // 不需要User对象
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 获取Socket状态
      */

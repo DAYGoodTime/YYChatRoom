@@ -93,6 +93,26 @@ public class DBUtil {
         return friendList;
     }
 
+    public static List<String> getUnknowUsers(String userName){
+        List<String> result = new ArrayList<>();
+        String query = "select u.username from user as u " +
+                "left join userrelation as ur on u.username = ur.slaveuser and ur.masteruser =? " +
+                "where ur.masteruser is null and u.username !=?";
+        PreparedStatement statement = null;
+        try{
+            statement = dataBase.prepareStatement(query);
+            statement.setString(1, userName);
+            statement.setString(2, userName);
+            ResultSet rs = statement.executeQuery();
+            while(rs.next()){
+                result.add(rs.getString(1));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
     public static boolean isUsersFriend(String userName,String userFriend,int friendType){
         boolean result = false;
         String query = "select * from userRelation where masterUser=? and slaveUser=? and relation=?";
@@ -145,10 +165,12 @@ public class DBUtil {
 
     public static void main(String[] args) {
         //TESTING DRIVER
-        boolean b = loginValidate("day", "kel123");
+        boolean b = connectDB();
         if(b){
             System.out.println("Success");
         }else
             System.out.println("Fail");
+
+        System.out.println(getUnknowUsers("day"));
     }
 }

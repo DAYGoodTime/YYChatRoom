@@ -174,12 +174,14 @@ public class ClientLoginUDP extends JFrame implements Client {
         try {
             ClientMain.UserName = username;
             // 创建好友列表窗口（UDP模式）
-            FriendList friendList = new FriendList(username, "");
+            FriendList friendList = new FriendList(username);
             friendListHashMap.put(username, friendList);
             //请求好友列表
             clientConnection.requestFriends(username);
             // 请求在线好友
             clientConnection.requestOnlineFriends(username);
+            //请求陌生人
+            clientConnection.requestUnknownFriends(username);
             // 通知服务器有新用户上线
             Message message = new Message();
             message.setSender(username);

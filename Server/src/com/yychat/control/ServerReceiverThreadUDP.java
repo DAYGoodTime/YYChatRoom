@@ -101,7 +101,9 @@ public class ServerReceiverThreadUDP implements Runnable {
                 case MessageType.IS_FRIEND_ONLINE:
                     handleIsFriendOnline(message);
                     break;
-
+                case MessageType.REQUEST_USER_LIST:
+                    handelRequestUserList(message.getSender());
+                    break;
                 default:
                     System.out.println("未处理的消息类型: " + message.getMessageType());
                     break;
@@ -243,6 +245,16 @@ public class ServerReceiverThreadUDP implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void handelRequestUserList(String sender){
+        List<String> allUsers = DBUtil.getUnknowUsers(sender);
+        Message responseMessage = new Message();
+        responseMessage.setJsonMessage(new JSONObject().set("list",allUsers));
+        responseMessage.setMessageType(MessageType.REQUEST_USER_LIST);
+        responseMessage.setReceiver(sender);
+        responseMessage.setSender("Server");
+        sendMessageToClient(clientAddress, responseMessage);
     }
 
     public void stop() {
