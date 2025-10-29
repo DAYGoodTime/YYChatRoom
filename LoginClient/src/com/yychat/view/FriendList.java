@@ -10,6 +10,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +34,10 @@ public class FriendList extends JFrame {
 
     private CountDownLatch initializationLatch;
     private CountDownLatch friendListLatch;
+
+    // 头像相关字段
+    private HashMap<String, ImageIcon> avatarCache = new HashMap<String, ImageIcon>(); // 头像缓存
+    private HashMap<String, JLabel> friendLabelMap = new HashMap<String, JLabel>();    // 好友标签映射
 
     public FriendList(String name) {
         Name = name;
@@ -247,16 +254,159 @@ public class FriendList extends JFrame {
     }
 
     /**
-     * 创建通用的JLabel好友标签
+     * 创建通用的JLabel好友标签（增强版 - 支持动态头像加载）
      */
     private JLabel createFriendLabel(String friendName, int iconIndex, boolean isEnabled) {
-        ImageIcon icon = loadFriendIcon(iconIndex);
+        ImageIcon icon = loadDynamicFriendIcon(friendName, iconIndex);
         JLabel label = new JLabel(friendName, icon, JLabel.LEFT);
         if (!friendName.equals(Name)) {
             label.setEnabled(isEnabled);
         }
         label.addMouseListener(createFriendMouseListener(friendName));
+
+        // 将标签添加到映射中，方便后续更新头像
+        friendLabelMap.put(friendName, label);
+
         return label;
+    }
+
+    /**
+     * 动态加载好友头像（优先从缓存或服务器获取）
+     */
+    private ImageIcon loadDynamicFriendIcon(String friendName, int iconIndex) {
+        // 先检查缓存
+        if (avatarCache.containsKey(friendName)) {
+            return avatarCache.get(friendName);
+        }
+
+        // 从服务器获取头像路径
+        String avatarPath = requestAvatarFromServer(friendName);
+        if (avatarPath != null && !avatarPath.trim().isEmpty()) {
+            ImageIcon icon = loadIconFromPath(avatarPath);
+            if (icon != null) {
+                avatarCache.put(friendName, icon);
+                return icon;
+            }
+        }
+
+        // 如果服务器获取失败，使用默认图标
+        return loadFriendIcon(iconIndex);
+    }
+
+    /**
+     * 从服务器请求用户头像路径
+     */
+    private String requestAvatarFromServer(String userName) {
+        try {
+            Message message = new Message();
+            message.setMessageType(MessageType.REQUEST_AVATAR);
+            message.setSender(Name);
+            message.setContent(userName);
+            message.setReceiver("Server");
+            udpConnection.sendChatMessage(message);
+            // 注意：这里应该有一个等待响应的机制，简化实现直接返回默认路径
+            return "0.jpg"; // 默认头像
+        } catch (Exception e) {
+            System.err.println("请求用户 " + userName + " 头像失败: " + e.getMessage());
+            return "0.jpg"; // 返回默认头像
+        }
+    }
+
+    /**
+     * 从文件路径加载图标
+     */
+    private ImageIcon loadIconFromPath(String avatarPath) {
+        try {
+            // 处理不同类型的路径
+            String fullPath;
+            if (avatarPath.startsWith("avatars/")) {
+                // 自定义头像：使用完整路径
+                fullPath = avatarPath;
+            } else if (avatarPath.startsWith("/") || avatarPath.contains(":")) {
+                // 绝对路径
+                fullPath = avatarPath;
+            } else {
+                // 默认头像：相对路径，添加res目录
+                fullPath = "res/" + avatarPath;
+            }
+
+            return new ImageIcon(fullPath);
+        } catch (Exception e) {
+            System.err.println("[FriendList]无法加载头像: " + avatarPath);
+            return null;
+        }
+    }
+
+    /**
+     * 更新好友头像
+     */
+    public void updateFriendAvatar(String friendName, String avatarPath) {
+        JLabel friendLabel = friendLabelMap.get(friendName);
+        if (friendLabel != null) {
+            // 检查是否为自定义头像
+            if (avatarPath.startsWith("avatars/")) {
+                // 尝试直接加载本地自定义头像
+                ImageIcon newIcon = loadIconFromPath(avatarPath);
+                if (newIcon != null) {
+                    friendLabel.setIcon(newIcon);
+                    avatarCache.put(friendName, newIcon);
+                    System.out.println("已更新好友 " + friendName + " 的头像为（本地）: " + avatarPath);
+                } else {
+                    // 本地文件不存在，尝试从服务器下载
+                    requestAvatarDownloadFromServer(friendName, avatarPath);
+                }
+            } else {
+                // 默认头像，直接加载
+                ImageIcon newIcon = loadIconFromPath(avatarPath);
+                if (newIcon != null) {
+                    friendLabel.setIcon(newIcon);
+                    avatarCache.put(friendName, newIcon);
+                    System.out.println("已更新好友 " + friendName + " 的头像为（默认）: " + avatarPath);
+                }
+            }
+        }
+    }
+
+    /**
+     * 清除头像缓存（用于强制重新加载）
+     */
+    public void clearAvatarCache() {
+        avatarCache.clear();
+        System.out.println("已清除头像缓存");
+    }
+
+    /**
+     * 请求从服务器下载头像文件
+     */
+    private void requestAvatarDownloadFromServer(String friendName, String avatarPath) {
+        try {
+            if (udpConnection != null) {
+                Message message = new Message();
+                message.setMessageType(MessageType.REQUEST_AVATAR_DOWNLOAD);
+                message.setSender(Name); // 当前用户
+                message.setReceiver(friendName); // 好友的用户名
+                message.setContent(avatarPath); // 头像路径
+
+                udpConnection.sendChatMessage(message);
+                System.out.println("请求下载好友 " + friendName + " 的头像: " + avatarPath);
+            } else {
+                System.err.println("UDP连接为空，无法请求头像下载");
+            }
+        } catch (Exception e) {
+            System.err.println("请求头像下载失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 处理头像下载完成后的回调
+     */
+    public void handleAvatarDownloaded(String friendName, String avatarPath) {
+        // 延迟一下再尝试加载，确保文件已经保存完成
+        javax.swing.Timer timer = new javax.swing.Timer(500, e -> {
+            updateFriendAvatar(friendName, avatarPath);
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
 
     /**

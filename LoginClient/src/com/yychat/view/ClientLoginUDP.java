@@ -102,7 +102,7 @@ public class ClientLoginUDP extends JFrame implements Client {
 
                 if (clientConnection.loginValidate(user)) {
                     // 登录成功后的处理
-                    handleSuccessfulLogin(name, user);
+                    handleSuccessfulLogin(name);
                 } else {
                     JOptionPane.showMessageDialog(this, "密码错误！请重新登录！");
                 }
@@ -170,7 +170,7 @@ public class ClientLoginUDP extends JFrame implements Client {
     /**
      * 处理成功登录后的逻辑
      */
-    private void handleSuccessfulLogin(String username, User user) {
+    private void handleSuccessfulLogin(String username) {
         try {
             ClientMain.UserName = username;
             // 创建好友列表窗口（UDP模式）
@@ -188,6 +188,11 @@ public class ClientLoginUDP extends JFrame implements Client {
             message.setReceiver("Server");
             message.setMessageType(MessageType.NEW_ONLINE_FRIEND);
             clientConnection.sendChatMessage(message);
+
+            // 创建并显示用户信息窗口
+            MyInfo myInfo = new MyInfo(username, friendList, clientConnection);
+            myInfo.setLocationRelativeTo(friendList); // 相对于好友列表窗口定位
+            myInfo.setVisible(true);
 
             // 关闭登录窗口
             this.dispose();

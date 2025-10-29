@@ -2,6 +2,7 @@ package com.yychat.view;
 
 import com.yychat.api.Client;
 import com.yychat.control.YYchatClientConnectionUDP;
+import com.yychat.model.User;
 
 import javax.swing.*;
 import java.util.concurrent.ExecutorService;
@@ -14,6 +15,13 @@ public class ClientMain {
 
     public static ExecutorService threadPool = Executors.newFixedThreadPool(10);
     public static String UserName;
+    private static User currentUser;
+    public static User getCurrentUser() {
+        return currentUser;
+    }
+    public static void setCurrentUser(User currentUser) {
+        ClientMain.currentUser = currentUser;
+    }
 
     public static Client getClient() {
         if (client == null) {

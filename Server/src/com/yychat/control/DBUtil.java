@@ -59,15 +59,21 @@ public class DBUtil {
         return hasUser;
     }
 
-    //添加新用户
+    //添加新用户（支持头像路径）
     public static int addNewUser(User user){
         int result = -1;
-        String insert = "insert into user(username,password) values(?,?)";
+        String insert = "insert into user(username,password,avatar_path) values(?,?,?)";
         PreparedStatement statement;
         try{
             statement = dataBase.prepareStatement(insert);
             statement.setString(1, user.getUserName());
             statement.setString(2, user.getPassword());
+            // 使用用户对象中的avatarPath，如果没有则使用默认值
+            String avatarPath = user.getAvatarPath();
+            if (avatarPath == null || avatarPath.trim().isEmpty()) {
+                avatarPath = "0.jpg";
+            }
+            statement.setString(3, avatarPath);
             result = statement.executeUpdate();
         }catch (Exception e){
             e.printStackTrace();
@@ -148,7 +154,7 @@ public class DBUtil {
 
     public static boolean insertChatMessage(String from, String to, String content, LocalDateTime time){
         boolean result = false;
-        String query="insert into message(from_user,to_user,content,sendtime) values(?,?,?,?)";
+        String query="insert into message(sender,receiver,content,sendtime) values(?,?,?,?)";
         PreparedStatement statement=null;
         try{
             statement = dataBase.prepareStatement(query);
@@ -161,6 +167,81 @@ public class DBUtil {
             e.printStackTrace();
         }
         return result;
+    }
+
+    /**
+     * 更新用户头像路径
+     * @param userName 用户名
+     * @param avatarPath 头像路径
+     * @return 更新是否成功
+     */
+    public static boolean updateUserAvatar(String userName, String avatarPath) {
+        boolean result = false;
+        String query = "UPDATE user SET avatar_path=? WHERE username=?";
+        PreparedStatement statement = null;
+        try {
+            statement = dataBase.prepareStatement(query);
+            statement.setString(1, avatarPath);
+            statement.setString(2, userName);
+            result = (statement.executeUpdate() > 0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * 获取用户头像路径
+     * @param userName 用户名
+     * @return 头像路径，如果用户不存在返回默认头像
+     */
+    public static String getUserAvatar(String userName) {
+        String avatarPath = "0.jpg"; // 默认头像
+        String query = "SELECT avatar_path FROM user WHERE username=?";
+        PreparedStatement statement = null;
+        try {
+            statement = dataBase.prepareStatement(query);
+            statement.setString(1, userName);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                avatarPath = rs.getString("avatar_path");
+                if (avatarPath == null || avatarPath.trim().isEmpty()) {
+                    avatarPath = "0.jpg"; // 如果数据库中为空，返回默认头像
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return avatarPath;
+    }
+
+    /**
+     * 获取用户完整信息（包括头像路径）
+     * @param userName 用户名
+     * @return 用户对象，如果用户不存在返回null
+     */
+    public static User getUserInfo(String userName) {
+        User user = null;
+        String query = "SELECT username, avatar_path FROM user WHERE username=?";
+        PreparedStatement statement = null;
+        try {
+            statement = dataBase.prepareStatement(query);
+            statement.setString(1, userName);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                user = new User();
+                user.setUserName(rs.getString("username"));
+                String avatarPath = rs.getString("avatar_path");
+                if (avatarPath != null && !avatarPath.trim().isEmpty()) {
+                    user.setAvatarPath(avatarPath);
+                } else {
+                    user.setAvatarPath("0.jpg"); // 默认头像
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return user;
     }
 
     public static void main(String[] args) {

@@ -1,5 +1,6 @@
 package com.yychat.control;
 
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
@@ -58,7 +59,7 @@ public class YYchatServerUDP implements Runnable {
     public void run() {
         try {
             datagramSocket = new DatagramSocket(PORT);
-            System.out.println("UDP服务器启动成功，正在监听" + PORT + "端口...");
+            System.out.println("服务器启动成功，正在监听" + PORT + "端口...");
 
             while (isRunning) {
                 try {
@@ -73,7 +74,7 @@ public class YYchatServerUDP implements Runnable {
                     handleClient(packet);
                 } catch (java.net.SocketException e) {
                     if (!isRunning) {
-                        System.out.println("UDP服务器通信已关闭");
+                        System.out.println("服务器通信已关闭");
                         break;
                     }
                     e.printStackTrace();
@@ -85,7 +86,7 @@ public class YYchatServerUDP implements Runnable {
             }
         } finally {
             stopServer();
-            System.out.println("UDP服务器主线程已关闭");
+            System.out.println("服务器主线程已关闭");
         }
     }
 
@@ -111,7 +112,7 @@ public class YYchatServerUDP implements Runnable {
                 if (loginSuccess) {
                     System.out.println("密码验证通过!");
                     message.setMessageType(MessageType.LOGIN_VALIDATE_SUCCESS);
-
+                    message.setJsonMessage(new JSONObject(DBUtil.getUserInfo(user.getUserName())));
                     // 保存用户地址映射
                     userAddressMap.put(user.getUserName(), clientAddress);
 

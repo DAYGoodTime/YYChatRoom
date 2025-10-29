@@ -22,5 +22,13 @@ public interface MessageType {
     String IS_FRIEND_ONLINE = "18";
     String IS_FRIEND_ONLINE_SUCCESS = "19";
     String IS_FRIEND_ONLINE_FAILURE = "20";
-    String REQUEST_USER_LIST = "21";
+    String REQUEST_USER_LIST = "21";           //请求用户列表
+    String REQUEST_AVATAR = "22";              //请求用户头像
+    String RESPONSE_AVATAR = "23";             //返回头像数据
+    String UPDATE_AVATAR = "24";               //更新头像
+    String AVATAR_UPLOAD_SUCCESS = "25";       //头像上传成功
+    String REQUEST_AVATAR_DOWNLOAD = "26";     //请求下载头像文件
+    String RESPONSE_AVATAR_DOWNLOAD = "27";    //返回头像文件数据
+    String AVATAR_DOWNLOAD_SUCCESS = "28";     //头像下载成功
+    String AVATAR_DOWNLOAD_FAILURE = "29";     //头像下载失败
 }

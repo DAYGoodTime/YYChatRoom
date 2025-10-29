@@ -16,6 +16,8 @@ public class Message implements Serializable, MessageType {
     private LocalDateTime time;
     private boolean isJsonMessage = false;
     private JSONObject json;
+    private byte[] avatarData;       // 头像二进制数据
+    private String avatarFileName;   // 头像文件名
     public String getMessageType() {
         return MessageType;
     }
@@ -66,5 +68,36 @@ public class Message implements Serializable, MessageType {
 
     public boolean isJsonMessage() {
         return isJsonMessage;
+    }
+
+    // 头像相关getter和setter方法
+    public byte[] getAvatarData() {
+        return avatarData;
+    }
+
+    public void setAvatarData(byte[] avatarData) {
+        this.avatarData = avatarData;
+    }
+
+    public String getAvatarFileName() {
+        return avatarFileName;
+    }
+
+    public void setAvatarFileName(String avatarFileName) {
+        this.avatarFileName = avatarFileName;
+    }
+
+    /**
+     * 获取文件数据（头像文件的二进制数据）
+     */
+    public byte[] getFileData() {
+        return avatarData;
+    }
+
+    /**
+     * 设置文件数据（头像文件的二进制数据）
+     */
+    public void setFileData(byte[] fileData) {
+        this.avatarData = fileData;
     }
 }
