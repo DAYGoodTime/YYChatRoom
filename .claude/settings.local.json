@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(javac -cp src -d bin src/com/yychat/control/ServerUDP.java src/com/yychat/control/ServerReceiverThreadUDP.java src/com/yychat/view/StartServerUDP.java)",
+      "Bash(javac -cp src -d bin src/com/yychat/control/YYchatClientConnectionUDP.java src/com/yychat/control/ClientReceiverThreadUDP.java src/com/yychat/view/ClientLoginUDP.java)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
