@@ -1,9 +1,13 @@
 package com.yychat.control;
 
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.yychat.api.Connection;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
+import com.yychat.model.Receiver;
 import com.yychat.model.User;
+import com.yychat.view.ClientMain;
 
 import java.io.*;
 import java.net.*;
@@ -33,15 +37,14 @@ public class YYchatClientConnectionUDP implements Connection {
     }
 
     /**
-     * 发送消息到服务器（UDP方式）
+     * 发送消息到服务器
      */
-    private void sendMessageToServer(Message message, User user) {
+    private void sendMessageToServer(Message message) {
         try {
             // 序列化Message和User对象
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(message);
-            oos.writeObject(user);
             oos.flush();
 
             byte[] data = bos.toByteArray();
@@ -52,7 +55,7 @@ public class YYchatClientConnectionUDP implements Connection {
             // 发送数据包
             datagramSocket.send(packet);
 
-            System.out.println("发送消息到服务器: " + message.getMessageType());
+            System.out.println("发送消息到服务器: " + JSONUtil.toJsonStr(message));
 
             oos.close();
             bos.close();
@@ -89,7 +92,7 @@ public class YYchatClientConnectionUDP implements Connection {
     }
 
     /**
-     * 登录验证（UDP方式）
+     * 登录验证
      */
     public boolean loginValidate(User user) {
         boolean loginSuccess = false;
@@ -97,11 +100,11 @@ public class YYchatClientConnectionUDP implements Connection {
         try {
             Message message = new Message();
             message.setSender(user.getUserName());
-            message.setReceiver("Server");
+            message.setReceiver(Receiver.Server.getStr());
             message.setMessageType(MessageType.USER_LOGIN_REQUEST);
-
+            message.setJsonMessage(new JSONObject(user));
             // 发送登录请求
-            sendMessageToServer(message, user);
+            sendMessageToServer(message);
 
             // 接收服务器响应
             Message responseMessage = receiveMessageFromServer();
@@ -125,7 +128,7 @@ public class YYchatClientConnectionUDP implements Connection {
     }
 
     /**
-     * 用户注册（UDP方式）
+     * 用户注册
      */
     public boolean userSignup(User user) {
         boolean result = false;
@@ -133,11 +136,11 @@ public class YYchatClientConnectionUDP implements Connection {
         try {
             Message signupMessage = new Message();
             signupMessage.setSender(user.getUserName());
-            signupMessage.setReceiver("Server");
+            signupMessage.setReceiver(Receiver.Server.getStr());
             signupMessage.setMessageType(MessageType.USER_SIGNUP_REQUEST);
-
+            signupMessage.setJsonMessage(new JSONObject(user));
             // 发送注册请求
-            sendMessageToServer(signupMessage, user);
+            sendMessageToServer(signupMessage);
 
             // 接收服务器响应
             Message responseMessage = receiveMessageFromServer();
@@ -176,7 +179,7 @@ public class YYchatClientConnectionUDP implements Connection {
             DatagramPacket packet = new DatagramPacket(data, data.length, serverAddress);
             datagramSocket.send(packet);
 
-            System.out.println("发送聊天消息: " + message.getContent());
+            System.out.println("发送聊天消息: " + JSONUtil.toJsonStr(message));
 
             oos.close();
             bos.close();
@@ -197,15 +200,35 @@ public class YYchatClientConnectionUDP implements Connection {
         try {
             Message message = new Message();
             message.setSender(username);
-            message.setReceiver("Server");
+            message.setReceiver(Receiver.Server.getStr());
             message.setMessageType(MessageType.REQUEST_ONLINE_FRIENDS);
 
-            sendMessageToServer(message, null); // 不需要User对象
+            sendMessageToServer(message); // 不需要User对象
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * 请求在线好友列表
+     */
+    public void requestFriends(String username) {
+        if (!isConnected) {
+            System.out.println("客户端未连接，无法请求好友列表");
+            return;
+        }
+
+        try {
+            Message message = new Message();
+            message.setSender(username);
+            message.setReceiver(Receiver.Server.getStr());
+            message.setMessageType(MessageType.REQUEST_FRIEND_LIST);
+
+            sendMessageToServer(message); // 不需要User对象
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * 启动接收线程
      */
@@ -231,9 +254,16 @@ public class YYchatClientConnectionUDP implements Connection {
      * 关闭连接
      */
     public void close() {
+        //向服务器发出下线
+        Message message = new Message();
+        message.setSender(ClientMain.UserName);
+        message.setReceiver(Receiver.Server.getStr());
+        message.setMessageType(MessageType.EXIT);
+        sendMessageToServer(message);
+        try {Thread.sleep(100);} catch (InterruptedException ignored) {}
         isConnected = false;
+        //停止接收
         stopReceiveThread();
-
         try {
             if (datagramSocket != null && !datagramSocket.isClosed()) {
                 datagramSocket.close();

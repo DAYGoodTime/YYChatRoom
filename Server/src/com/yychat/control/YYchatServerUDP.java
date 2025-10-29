@@ -1,5 +1,6 @@
 package com.yychat.control;
 
+import cn.hutool.json.JSONUtil;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
 import com.yychat.model.User;
@@ -100,15 +101,12 @@ public class YYchatServerUDP implements Runnable {
 
             InetSocketAddress clientAddress = (InetSocketAddress) packet.getSocketAddress();
 
-            System.out.println("接收来自 " + clientAddress + " 的消息: " + message.getMessageType());
-            System.out.println("消息内容: " + message.getContent());
-
-
             message.setSender("Server");
             message.setReceiver(message.getSender());
+
             // 处理登录请求
             if (message.getMessageType().equals(MessageType.USER_LOGIN_REQUEST)) {
-                User user = (User) ois.readObject();
+                User user = message.getJson().toBean(User.class);
                 boolean loginSuccess = DBUtil.loginValidate(user.getUserName(), user.getPassword());
                 if (loginSuccess) {
                     System.out.println("密码验证通过!");
@@ -120,9 +118,6 @@ public class YYchatServerUDP implements Runnable {
                     // 发送响应消息
                     sendMessageToClient(clientAddress, message);
 
-                    // 启动处理线程
-                    threadPool.execute(new ServerReceiverThreadUDP(packet));
-
                     System.out.println("用户 " + user.getUserName() + " 登录成功，地址: " + clientAddress);
                 } else {
                     System.out.println("密码验证失败!");
@@ -132,7 +127,7 @@ public class YYchatServerUDP implements Runnable {
             }
             // 处理注册请求
             else if (message.getMessageType().equals(MessageType.USER_SIGNUP_REQUEST)) {
-                User user = (User) ois.readObject();
+                User user = message.getJson().toBean(User.class);
                 int signupSuccess = -1;
                 if (DBUtil.hasUser(user.getUserName())) {
                     // 用户名已存在
@@ -147,7 +142,8 @@ public class YYchatServerUDP implements Runnable {
                     message.setMessageType(MessageType.USER_SIGNUP_FAILURE);
                 }
                 sendMessageToClient(clientAddress, message);
-            } else {
+            }
+            else {
                 // 对于其他消息类型，直接交给接收线程处理
                 threadPool.execute(new ServerReceiverThreadUDP(packet));
             }
@@ -174,7 +170,7 @@ public class YYchatServerUDP implements Runnable {
             DatagramPacket packet = new DatagramPacket(data, data.length, clientAddress);
             datagramSocket.send(packet);
 
-            System.out.println("向 " + clientAddress + " 发送消息: " + message.getMessageType());
+            System.out.println("向 " + clientAddress + " 发送消息: " + JSONUtil.toJsonStr(message));
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -1,5 +1,7 @@
 package com.yychat.control;
 
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
 import com.yychat.api.MessageThread;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
@@ -12,6 +14,7 @@ import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.List;
 
 /**
  * UDP版本的客户端接收线程，处理来自服务器的UDP消息
@@ -69,7 +72,7 @@ public class ClientReceiverThreadUDP extends MessageThread {
 
             Message message = (Message) ois.readObject();
 
-            System.out.println("客户端接收消息: " + message.getMessageType() + " 来自: " + message.getSender());
+            System.out.println("客户端接收消息: " + JSONUtil.toJsonStr(message));
 
             switch (message.getMessageType()) {
                 case MessageType.COMMON_CHAT_MESSAGE:
@@ -147,9 +150,12 @@ public class ClientReceiverThreadUDP extends MessageThread {
             String receiver = message.getReceiver();
             FriendList friendList = ClientMain.getClient().getFriendList().get(receiver);
 
-            if (friendList != null) {
-                System.out.println("收到在线好友列表: " + message.getContent());
-                friendList.activeOnlineFriendIcon(message.getContent());
+            if (friendList != null && message.isJsonMessage()) {
+                JSONArray list = message.getJson().getJSONArray("list");
+                System.out.println("收到在线好友列表: " + list.toJSONString(0));
+                if(!list.isEmpty()){
+                    friendList.activeOnlineFriendIcon(list.toList(String.class));
+                }
             } else {
                 System.out.println("未找到好友列表窗口");
             }

@@ -1,12 +1,19 @@
 package com.yychat.view;
 
 import com.yychat.api.Client;
+import com.yychat.control.YYchatClientConnectionUDP;
 
 import javax.swing.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class ClientMain {
 
     private static Client client;
+
+    public static ExecutorService threadPool = Executors.newFixedThreadPool(10);
+    public static String UserName;
 
     public static Client getClient() {
         if (client == null) {
@@ -22,6 +29,8 @@ public class ClientMain {
 //        }
         // 设置关闭钩子
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            YYchatClientConnectionUDP connection = (YYchatClientConnectionUDP) getClient().getConnection();
+            connection.close();
             System.out.println("UDP客户端正在关闭...");
         }));
         // 启动UDP登录界面

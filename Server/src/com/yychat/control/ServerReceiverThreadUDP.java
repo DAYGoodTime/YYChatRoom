@@ -1,6 +1,7 @@
 package com.yychat.control;
 
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.yychat.model.FriendType;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
@@ -9,6 +10,7 @@ import java.io.*;
 import java.net.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * UDP版本的服务器接收线程，处理无连接UDP消息
@@ -67,9 +69,11 @@ public class ServerReceiverThreadUDP implements Runnable {
 
             Message message = (Message) ois.readObject();
 
-            System.out.println("处理来自 " + clientAddress + " 的消息: " + message.getMessageType());
+            System.out.println("处理来自 " + clientAddress + " 的消息: " + JSONUtil.toJsonStr(message));
 
             switch (message.getMessageType()) {
+                case MessageType.USER_LOGIN_REQUEST:
+
                 case MessageType.COMMON_CHAT_MESSAGE:
                     handleChatMessage(message);
                     break;
@@ -140,26 +144,14 @@ public class ServerReceiverThreadUDP implements Runnable {
 
     private void handleRequestOnlineFriends(Message message) {
         Set<String> onlineFriendSet = YYchatServerUDP.getUserAddressMap().keySet();
-        Iterator<String> it = onlineFriendSet.iterator();
-        StringBuilder onlineFriendBuilder = new StringBuilder();
-
         List<String> allFriends = DBUtil.getAllFriends(message.getSender(), FriendType.NORMAL.getCode());
-        while (it.hasNext()) {
-            String user = it.next();
-            if(allFriends.contains(user)) {
-                onlineFriendBuilder.append(user);
-            }
-            if (it.hasNext()) {
-                onlineFriendBuilder.append(",");
-            }
-        }
+        List<String> onlineFriendList = allFriends.stream().filter(onlineFriendSet::contains).collect(Collectors.toList());
 
-        String onlineFriends = onlineFriendBuilder.toString();
         Message responseMessage = new Message();
         responseMessage.setReceiver(message.getSender());
         responseMessage.setSender("Server");
         responseMessage.setMessageType(MessageType.RESPONSE_ONLINE_FRIENDS);
-        responseMessage.setContent(onlineFriends);
+        responseMessage.setJsonMessage(new JSONObject().set("list",onlineFriendList));
 
         sendMessageToClient(clientAddress, responseMessage);
     }
@@ -170,7 +162,7 @@ public class ServerReceiverThreadUDP implements Runnable {
 
         for (String friendName : onlineFriendSet) {
             InetSocketAddress friendAddress = YYchatServerUDP.getUserAddress(friendName);
-            if (friendAddress != null) {
+            if (friendAddress != null && !friendName.equals(message.getSender())) {
                 message.setReceiver(friendName);
                 sendMessageToClient(friendAddress, message);
             }
@@ -181,7 +173,7 @@ public class ServerReceiverThreadUDP implements Runnable {
         Message responseMessage = new Message();
 
         List<String> allFriends = DBUtil.getAllFriends(message.getSender(), 1);
-        responseMessage.setContent(new JSONObject().set("list",allFriends).toJSONString(0));
+        responseMessage.setJsonMessage(new JSONObject().set("list",allFriends));
         responseMessage.setMessageType(MessageType.RESPONSE_FRIEND_LIST);
         responseMessage.setReceiver(message.getSender());
         responseMessage.setSender("Server");
@@ -244,7 +236,7 @@ public class ServerReceiverThreadUDP implements Runnable {
             }
             datagramSocket.send(packet);
 
-            System.out.println("向 " + clientAddress + " 发送消息: " + message.getMessageType());
+            System.out.println("向 " + clientAddress + " 发送消息: " + JSONUtil.toJsonStr(message));
 
             oos.close();
             bos.close();
