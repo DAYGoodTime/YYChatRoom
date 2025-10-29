@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(javac -cp src -d bin src/com/yychat/control/ServerUDP.java src/com/yychat/control/ServerReceiverThreadUDP.java src/com/yychat/view/StartServerUDP.java)",
-      "Bash(javac -cp src -d bin src/com/yychat/control/YYchatClientConnectionUDP.java src/com/yychat/control/ClientReceiverThreadUDP.java src/com/yychat/view/ClientLoginUDP.java)"
+      "Bash(javac -cp src -d bin src/com/yychat/control/YYchatClientConnectionUDP.java src/com/yychat/control/ClientReceiverThreadUDP.java src/com/yychat/view/ClientLoginUDP.java)",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/Server/src/com/yychat/control/DBUtil.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/Server/src/com/yychat/model/User.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/LoginClient/src/com/yychat/model/User.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/Server/src/com/yychat/model/Message.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/LoginClient/src/com/yychat/model/Message.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/Server/src/com/yychat/model/MessageType.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/LoginClient/src/com/yychat/view/FriendList.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/LoginClient/src/com/yychat/view/FriendChat.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/Server/src/com/yychat/tcp/ServerReceiverThread.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/LoginClient/src/com/yychat/tcp/ClientReceiverThread.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/Server/src/com/yychat/control/ServerReceiverThreadUDP.java\")",
+      "Bash(cat \"/D/project/chatroom/YYChatRoom/LoginClient/src/com/yychat/control/ClientReceiverThreadUDP.java\")",
+      "Bash(mysql -u root -pkel123 -e \"USE yychat2022s; DESCRIBE user;\")"
     ],
     "deny": [],
     "ask": []

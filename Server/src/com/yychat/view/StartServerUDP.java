@@ -5,7 +5,7 @@ import com.yychat.control.DBUtil;
 import com.yychat.control.YYchatServerUDP;
 
 /**
- * UDP服务器的启动类（增强版 - 支持头像功能）
+ * 服务器的启动类
  */
 public class StartServerUDP {
     public static void main(String[] args) {

@@ -31,4 +31,16 @@ public interface MessageType {
     String RESPONSE_AVATAR_DOWNLOAD = "27";    //返回头像文件数据
     String AVATAR_DOWNLOAD_SUCCESS = "28";     //头像下载成功
     String AVATAR_DOWNLOAD_FAILURE = "29";     //头像下载失败
+
+    // TCP文件传输消息类型
+    String TCP_FILE_TRANSFER_REQUEST = "30";    // TCP文件传输请求
+    String TCP_FILE_TRANSFER_START = "31";      // 开始TCP传输
+    String TCP_FILE_TRANSFER_CHUNK = "32";      // 传输文件分片
+    String TCP_FILE_TRANSFER_COMPLETE = "33";   // 传输完成
+    String TCP_FILE_TRANSFER_ERROR = "34";      // 传输错误
+    String TCP_FILE_TRANSFER_PROGRESS = "35";   // 传输进度更新
+    String TCP_FILE_TRANSFER_RESUME = "36";     // 断点续传
+    String TCP_FILE_TRANSFER_CANCEL = "37";     // 取消传输
+    String MIGRATION_AVATAR_TO_TCP = "38";      // 头像迁移到TCP
+    String TCP_FILE_TRANSFER_VERIFY = "39";     // 文件完整性验证
 }

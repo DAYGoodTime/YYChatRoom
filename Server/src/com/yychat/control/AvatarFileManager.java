@@ -1,14 +1,11 @@
 package com.yychat.control;
 
-import javax.swing.*;
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 头像文件管理系统
@@ -64,45 +61,6 @@ public class AvatarFileManager {
         }
     }
 
-    /**
-     * 保存用户头像文件
-     * @param userName 用户名
-     * @param sourceFile 源文件
-     * @param fileName 原始文件名
-     * @return 保存后的文件路径，如果失败返回null
-     */
-    public static String saveUserAvatar(String userName, File sourceFile, String fileName) {
-        try {
-            // 验证文件
-            if (!validateAvatarFile(sourceFile, fileName)) {
-                return null;
-            }
-
-            // 生成唯一文件名
-            String extension = getFileExtension(fileName);
-            String uniqueFileName = userName + "_" + System.currentTimeMillis() + "." + extension;
-
-            // 用户头像目录
-            Path userDir = Paths.get(AVATAR_BASE_DIR, USER_AVATAR_DIR, userName);
-            Files.createDirectories(userDir);
-
-            // 目标文件路径
-            Path targetPath = userDir.resolve(uniqueFileName);
-
-            // 复制文件
-            Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            String relativePath = USER_AVATAR_DIR + "/" + userName + "/" + uniqueFileName;
-            System.out.println("用户 " + userName + " 头像已保存: " + relativePath);
-
-            return relativePath;
-
-        } catch (IOException e) {
-            System.err.println("保存用户头像失败: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     /**
      * 保存头像文件（从字节数据）
@@ -208,66 +166,6 @@ public class AvatarFileManager {
             System.err.println("无法加载默认头像: " + avatarFile);
             return null;
         }
-    }
-
-    /**
-     * 删除用户头像文件
-     * @param userName 用户名
-     * @param avatarPath 头像路径
-     * @return 删除是否成功
-     */
-    public static boolean deleteUserAvatar(String userName, String avatarPath) {
-        try {
-            if (avatarPath == null || avatarPath.trim().isEmpty()) {
-                return false;
-            }
-
-            // 不允许删除默认头像
-            if (avatarPath.matches("^[0-5]\\.jpg$")) {
-                System.out.println("不允许删除默认头像: " + avatarPath);
-                return false;
-            }
-
-            Path filePath = Paths.get(AVATAR_BASE_DIR, avatarPath);
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-                System.out.println("已删除用户头像: " + avatarPath);
-                return true;
-            }
-
-            return false;
-
-        } catch (IOException e) {
-            System.err.println("删除头像文件失败: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * 验证头像文件
-     * @param file 文件
-     * @param fileName 文件名
-     * @return 验证是否通过
-     */
-    private static boolean validateAvatarFile(File file, String fileName) {
-        if (!file.exists() || !file.isFile()) {
-            System.err.println("文件不存在或不是有效文件");
-            return false;
-        }
-
-        if (file.length() > MAX_FILE_SIZE) {
-            System.err.println("文件大小超过限制: " + file.length() + " bytes");
-            return false;
-        }
-
-        String extension = getFileExtension(fileName);
-        if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
-            System.err.println("不支持的文件格式: " + extension);
-            return false;
-        }
-
-        return true;
     }
 
     /**
