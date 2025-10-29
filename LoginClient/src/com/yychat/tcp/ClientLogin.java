@@ -1,11 +1,9 @@
-package com.yychat.view;
+package com.yychat.tcp;
 
-import com.yychat.control.ClientReceiverThread;
-import com.yychat.control.ShutdownHook;
-import com.yychat.control.YYchatClientConnection;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
 import com.yychat.model.User;
+import com.yychat.view.FriendList;
 
 import javax.swing.*;
 import java.awt.*;
@@ -139,4 +137,6 @@ public class ClientLogin extends JFrame{
         Runtime.getRuntime().addShutdownHook(new ShutdownHook());
         ClientLogin frame = new ClientLogin();
     }
+
+
 }

@@ -6,23 +6,30 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalField;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class DBUtil {
     private static final String db_url = "jdbc:mysql://localhost:3306/yychat2022s?useUnicode=true&characterEncoding=utf-8";
     private static final String db_user = "root";
-    private static final String db_pass = "Xwl20050219";
-    private static Connection dataBase = connectDB();
+    private static final String db_pass = "kel123";
+    private static Connection dataBase;
 
-    private static Connection connectDB() {
-        Connection tmp = null;
+    public static boolean connectDB() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            tmp = DriverManager.getConnection(db_url, db_user, db_pass);
+            dataBase = DriverManager.getConnection(db_url, db_user, db_pass);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("数据库连接失败");
+            return false;
         }
-        return tmp;
+        return true;
     }
 
     public static boolean loginValidate(String userName,String password){
@@ -72,8 +79,8 @@ public class DBUtil {
         return result;
     }
 
-    public static String getAllFriends(String userName,int friendType){
-        StringBuilder builder = new StringBuilder();
+    public static List<String> getAllFriends(String userName,int friendType){
+        List<String> friendList = new ArrayList<>();
         String query = "select slaveUser from userRelation where masterUser=? and relation=?";
         PreparedStatement statement = null;
         try{
@@ -82,15 +89,12 @@ public class DBUtil {
             statement.setInt(2, friendType);
             ResultSet rs = statement.executeQuery();
             while(rs.next()){
-                builder.append(rs.getString(1));
-                builder.append(" ");
+                friendList.add(rs.getString(1));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        String result = builder.toString();
-        System.out.println(userName + "全部好友:" + result);
-        return result;
+        return friendList;
     }
 
     public static boolean isUsersFriend(String userName,String userFriend,int friendType){
@@ -126,7 +130,7 @@ public class DBUtil {
         return count;
     }
 
-    public static boolean insertChatMessage(String from, String to, String content, Date time){
+    public static boolean insertChatMessage(String from, String to, String content, LocalDateTime time){
         boolean result = false;
         String query="insert into message(from_user,to_user,content,sendtime) values(?,?,?,?)";
         PreparedStatement statement=null;
@@ -135,11 +139,20 @@ public class DBUtil {
             statement.setString(1, from);
             statement.setString(2, to);
             statement.setString(3, content);
-            statement.setTimestamp(4,new java.sql.Timestamp(time.getTime()));
+            statement.setTimestamp(4,new java.sql.Timestamp(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
             result = (statement.executeUpdate() > 0);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return result;
+    }
+
+    public static void main(String[] args) {
+        //TESTING DRIVER
+        boolean b = loginValidate("day", "kel123");
+        if(b){
+            System.out.println("Success");
+        }else
+            System.out.println("Fail");
     }
 }

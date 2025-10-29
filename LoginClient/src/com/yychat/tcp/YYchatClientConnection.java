@@ -1,4 +1,4 @@
-package com.yychat.control;
+package com.yychat.tcp;
 
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
@@ -15,7 +15,7 @@ public class YYchatClientConnection {
     public YYchatClientConnection(){
 
         try {
-            socket = new Socket("127.0.0.1", 3456);
+            socket = new Socket("127.0.0.1", 5678);
             System.out.println("客户端连接成功" + getSocket());
         }catch (Exception e) {
             e.printStackTrace();

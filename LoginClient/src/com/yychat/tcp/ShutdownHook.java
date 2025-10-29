@@ -1,8 +1,7 @@
-package com.yychat.control;
+package com.yychat.tcp;
 
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
-import com.yychat.view.ClientLogin;
 import com.yychat.view.FriendList;
 
 import java.io.ObjectOutputStream;
@@ -11,7 +10,7 @@ public class ShutdownHook extends Thread implements Runnable{
 
     @Override
     public void run() {
-        System.out.println("ShutdownHook execute start...");
+        System.out.println("正在处理未关闭的连接");
         try {
             ClientReceiverThread thread = ClientLogin.getClientReceiverThread();
             if(thread != null) {
@@ -30,6 +29,6 @@ public class ShutdownHook extends Thread implements Runnable{
         }catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("ShutdownHook execute end...");
+        System.out.println("连接清理完毕");
     }
 }

@@ -1,6 +1,5 @@
 package com.yychat.view;
 
-import com.yychat.control.YYchatClientConnection;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
 
@@ -8,8 +7,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.ObjectOutputStream;
 import java.util.HashMap;
+
+/**
+ * 好友列表窗口类，支持TCP和UDP协议
+ * 对于UDP，需要通过ClientLoginUDP传递连接对象
+ */
 
 public class FriendList extends JFrame {
     final int FRIENDCOUNT = 50;
@@ -17,10 +20,22 @@ public class FriendList extends JFrame {
     private static String Name;
     JLabel[] friendLabel;
     JPanel friendListPanel = null;
+    JPanel friendPanel = null;
     private static HashMap<String, FriendChat> friendChatMap = new HashMap<String,FriendChat>();
-    public FriendList(String name,String friendListName){
+    private boolean isUdpMode = false;
+    private Object udpConnection = null; // 保存UDP连接对象
+
+    // TCP构造函数
+    public FriendList(String name, String friendListName) {
+        this(name, friendListName, false, null);
+    }
+
+    // UDP构造函数
+    public FriendList(String name, String friendListName, boolean isUdpMode, Object udpConnection) {
         Name = name;
-        JPanel friendPanel = new JPanel(new BorderLayout());
+        this.isUdpMode = isUdpMode;
+        this.udpConnection = udpConnection;
+        friendPanel = new JPanel(new BorderLayout());
         JPanel addFriendPanel = new JPanel(new GridLayout(2,1));
         JButton friendButton1 = new JButton("我的好友");
         JButton strangerButton1 = new JButton("陌生人");
@@ -36,35 +51,12 @@ public class FriendList extends JFrame {
                 message.setContent(newFriendName);
                 message.setMessageType(MessageType.USER_ADD_NEW_FRIEND);
                 try{
-                    ObjectOutputStream out = new ObjectOutputStream(YYchatClientConnection.getSocket().getOutputStream());
-                    out.writeObject(message);
-//                    long startTime = System.currentTimeMillis();
-//                    boolean flag = true;
-//                    while(ACKFromServer.equals("-1")){
-//                        long currentTime = System.currentTimeMillis();
-//                        if(currentTime - startTime > 10000){
-//                            flag = false;
-//                            break;
-//                        }
-//
-//                    }
-//                    if(flag){
-//                        switch (ACKFromServer){
-//                            case MessageType.USER_ADD_NEW_FRIEND_SUCCESS -> {
-//                                JOptionPane.showMessageDialog(this,"添加成功！");
-//                                this.addNewFriend(newFriendName);
-//                            }
-//                            case MessageType.USER_ADD_NEW_FRIEND_FAILURE_NO_USER -> {
-//                                JOptionPane.showMessageDialog(this,"添加失败！没有该用户");
-//                            }
-//                            case MessageType.USER_ADD_NEW_FRIEND_FAILURE_ALREADY_FRIEND -> {
-//                                JOptionPane.showMessageDialog(this,"添加失败！该用户已经是你的朋友！");
-//                            }
-//                        }
-//                    }
-//                    else{
-//                        JOptionPane.showMessageDialog(this,"服务器响应超时！");
-//                    }
+                    if(isUdpMode && udpConnection != null){
+                        // UDP模式发送消息
+                        com.yychat.control.YYchatClientConnectionUDP udpConn =
+                            (com.yychat.control.YYchatClientConnectionUDP) udpConnection;
+                        udpConn.sendChatMessage(message);
+                    }
                 }catch(Exception ex){
                     ex.printStackTrace();
                 }
@@ -73,54 +65,12 @@ public class FriendList extends JFrame {
 
         addFriendPanel.add(addFriendButton);
         addFriendPanel.add(friendButton1);
+        //TCP
+        if(!isUdpMode)
+            setOldFriendList(friendListName);
 
         JButton blackListButton1 = new JButton("黑名单");
         friendPanel.add(addFriendPanel, BorderLayout.NORTH);
-
-        String[] friendList = friendListName.split(" ");
-        friendListPanel = new JPanel(new GridLayout(0,1));//friendList.length
-        friendLabel = new JLabel[friendList.length];
-        for(int i=0;i<friendList.length;i++){
-            if(friendList[i] != null && !friendList[i].isEmpty()){
-                ImageIcon icon = new ImageIcon("res/"+ i%6 +".jpg");
-                friendLabel[i] = new JLabel(friendList[i],icon,JLabel.LEFT);
-                if(!friendLabel[i].getText().equals(name)){
-                    friendLabel[i].setEnabled(false);
-                }
-                friendLabel[i].addMouseListener(new MouseListener() {
-                    public void mouseClicked(MouseEvent e) {
-                        if(e.getClickCount() == 2 && e.getSource() instanceof JLabel){
-                            JLabel label = (JLabel) e.getSource();
-                            String friendName = label.getText();
-                            FriendChat chat = new FriendChat(name,friendName);
-                            friendChatMap.put(name + "to" + friendName,chat);
-                        }
-                    }
-                    @Override
-                    public void mousePressed(MouseEvent e) {}
-                    @Override
-                    public void mouseReleased(MouseEvent e) {}
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        if(e.getSource() instanceof JLabel){
-                            JLabel label = (JLabel) e.getSource();
-                            label.setForeground(Color.red);
-                        }
-                    }
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        if(e.getSource() instanceof JLabel){
-                            JLabel label = (JLabel) e.getSource();
-                            label.setForeground(Color.black);
-                        }
-                    }
-                });
-                friendListPanel.add(friendLabel[i]);
-            }
-        }
-
-        JScrollPane friendListScrollPane = new JScrollPane(friendListPanel);
-        friendPanel.add(friendListScrollPane, BorderLayout.CENTER);
 
         JPanel strangerBlackPanel = new JPanel(new GridLayout(2,1));
         strangerBlackPanel.add(strangerButton1);
@@ -207,8 +157,15 @@ public class FriendList extends JFrame {
                 if(e.getClickCount() ==2 && e.getSource() instanceof JLabel){
                     JLabel label = (JLabel) e.getSource();
                     String friendName = label.getText();
-                    FriendChat chat = new FriendChat(Name,friendName);
-                    friendChatMap.put(Name + "to" + friendName,chat);
+                    if(isUdpMode && udpConnection != null){
+                        // UDP模式下创建聊天窗口
+                        FriendChat chat = new FriendChat(Name, friendName, true, udpConnection);
+                        friendChatMap.put(Name + "to" + friendName, chat);
+                    } else {
+                        // TCP模式下创建聊天窗口
+                        FriendChat chat = new FriendChat(Name, friendName);
+                        friendChatMap.put(Name + "to" + friendName, chat);
+                    }
                 }
             }
             @Override
@@ -235,9 +192,106 @@ public class FriendList extends JFrame {
         friendListPanel.revalidate();
         friendListPanel.repaint();
     }
+
+    /**
+     * 设置好友列表
+     */
+    public void setFriendList(java.util.List<String> friendList) {
+        if (friendList != null && !friendList.isEmpty()) {
+            int friendListSize = friendList.size();
+            // 清理现有的好友列表
+            friendListPanel.removeAll();
+            friendListPanel = new JPanel(new GridLayout(0,Math.max(friendListSize,1)));
+            friendLabel = new JLabel[friendListSize];
+
+            for(int i = 0; i < friendListSize; i++) {
+                String friendName = friendList.get(i);
+                if(friendName != null && !friendName.isEmpty()) {
+                    ImageIcon icon = new ImageIcon("res/" + i % 6 + ".jpg");
+                    friendLabel[i] = new JLabel(friendName, icon, JLabel.LEFT);
+                    if(!friendLabel[i].getText().equals(Name)) {
+                        friendLabel[i].setEnabled(false);
+                    }
+                    friendLabel[i].addMouseListener(new MouseListener() {
+                        public void mouseClicked(MouseEvent e) {
+                            if(e.getClickCount() == 2 && e.getSource() instanceof JLabel){
+                                JLabel label = (JLabel) e.getSource();
+                                String friendName = label.getText();
+                                // UDP模式下创建聊天窗口
+                                FriendChat chat = new FriendChat(Name, friendName, true, udpConnection);
+                                friendChatMap.put(Name + "to" + friendName, chat);
+                            }
+                        }
+                        @Override
+                        public void mousePressed(MouseEvent e) {}
+                        @Override
+                        public void mouseReleased(MouseEvent e) {}
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            if(e.getSource() instanceof JLabel){
+                                JLabel label = (JLabel) e.getSource();
+                                label.setForeground(Color.red);
+                            }
+                        }
+                        @Override
+                        public void mouseExited(MouseEvent e) {
+                            if(e.getSource() instanceof JLabel){
+                                JLabel label = (JLabel) e.getSource();
+                                label.setForeground(Color.black);
+                            }
+                        }
+                    });
+                    friendListPanel.add(friendLabel[i]);
+                }
+            }
+
+            friendListPanel.revalidate();
+            friendListPanel.repaint();
+        }
+    }
+
+    public void setOldFriendList(String friendListStr) {
+        String[] friendList = friendListStr.split(" ");
+        friendLabel = new JLabel[friendList.length];
+        for(int i=0;i<friendList.length;i++){
+            if(friendList[i] != null && !friendList[i].isEmpty()){
+                ImageIcon icon = new ImageIcon("res/"+ i%6 +".jpg");
+                friendLabel[i] = new JLabel(friendList[i],icon,JLabel.LEFT);
+                if(!friendLabel[i].getText().equals(getUserName())){
+                    friendLabel[i].setEnabled(false);
+                }
+                friendLabel[i].addMouseListener(new MouseListener() {
+                    public void mouseClicked(MouseEvent e) {
+                        if(e.getClickCount() == 2 && e.getSource() instanceof JLabel){
+                            JLabel label = (JLabel) e.getSource();
+                            String friendName = label.getText();
+                            FriendChat chat = new FriendChat(getUserName(),friendName);
+                            friendChatMap.put(getUserName() + "to" + friendName,chat);
+                        }
+                    }
+                    @Override
+                    public void mousePressed(MouseEvent e) {}
+                    @Override
+                    public void mouseReleased(MouseEvent e) {}
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        if(e.getSource() instanceof JLabel){
+                            JLabel label = (JLabel) e.getSource();
+                            label.setForeground(Color.red);
+                        }
+                    }
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        if(e.getSource() instanceof JLabel){
+                            JLabel label = (JLabel) e.getSource();
+                            label.setForeground(Color.black);
+                        }
+                    }
+                });
+                friendListPanel.add(friendLabel[i]);
+            }
+        }
+        JScrollPane friendListScrollPane = new JScrollPane(friendListPanel);
+        friendPanel.add(friendListScrollPane, BorderLayout.CENTER);
+    }
 }
-
-
-/*
-
- */

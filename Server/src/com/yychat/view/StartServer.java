@@ -1,6 +1,6 @@
 package com.yychat.view;
 
-import com.yychat.control.YYchatServer;
+import com.yychat.tcp.YYchatServer;
 
 import javax.swing.*;
 import java.awt.*;

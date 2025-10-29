@@ -1,8 +1,7 @@
-package com.yychat.control;
+package com.yychat.tcp;
 
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
-import com.yychat.view.ClientLogin;
 import com.yychat.view.FriendChat;
 import com.yychat.view.FriendList;
 
