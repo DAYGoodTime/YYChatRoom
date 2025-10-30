@@ -86,20 +86,21 @@ public class FriendChat extends JFrame implements KeyListener {
                 // 错误消息使用红色标签显示
                 JLabel errorLabel = new JLabel("消息发送失败: " + response.getMessage());
                 errorLabel.setForeground(Color.RED);
+                errorLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
                 messageArea.setCaretPosition(messageArea.getDocument().getLength());
                 messageArea.insertComponent(errorLabel);
+
+                // 添加一个不可见的占位符组件来强制换行，确保每个消息面板占据一行
+                JLabel newlineLabel = new JLabel("\n");
+                newlineLabel.setPreferredSize(new Dimension(1, 80)); // 设置固定高度来确保换行
+                newlineLabel.setVisible(false); // 隐藏占位符
+                messageArea.insertComponent(newlineLabel);
                 messageArea.replaceSelection("\n");
             }
         });
         sendButton.setForeground(Color.blue);
     }
 
-    /**
-     * 格式化发送消息显示
-     *
-     * @param message 消息内容
-     * @param sender  发送者
-     */
     private void appendSendMessage(String message, String sender) {
         // 创建消息面板：左侧头像 + 右侧内容和时间
         JPanel messagePanel = new JPanel(new BorderLayout(10, 5));
@@ -147,18 +148,18 @@ public class FriendChat extends JFrame implements KeyListener {
         messageArea.setCaretPosition(messageArea.getDocument().getLength());
         messageArea.insertComponent(messagePanel);
 
-        // 添加分隔符
-        messageArea.replaceSelection("\n");
+        // 强制换行，确保每个消息面板独占一行
+        try {
+            messageArea.getDocument().insertString(messageArea.getDocument().getLength(), "\n", null);
+        } catch (Exception e) {
+            // 插入换行符失败时使用备选方案
+            messageArea.replaceSelection("\n");
+        }
 
         // 自动滚动到底部
         messageArea.setCaretPosition(messageArea.getDocument().getLength());
     }
 
-    /**
-     * 格式化接收消息显示
-     *
-     * @param message 消息对象
-     */
     private void appendReceiveMessage(Message message) {
         // 创建消息面板：左侧头像 + 右侧内容和时间
         JPanel messagePanel = new JPanel(new BorderLayout(10, 5));
@@ -206,8 +207,13 @@ public class FriendChat extends JFrame implements KeyListener {
         messageArea.setCaretPosition(messageArea.getDocument().getLength());
         messageArea.insertComponent(messagePanel);
 
-        // 添加分隔符
-        messageArea.replaceSelection("\n");
+        // 强制换行，确保每个消息面板独占一行
+        try {
+            messageArea.getDocument().insertString(messageArea.getDocument().getLength(), "\n", null);
+        } catch (Exception e) {
+            // 插入换行符失败时使用备选方案
+            messageArea.replaceSelection("\n");
+        }
 
         // 自动滚动到底部
         messageArea.setCaretPosition(messageArea.getDocument().getLength());

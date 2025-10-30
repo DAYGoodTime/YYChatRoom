@@ -367,23 +367,28 @@ public class FriendList extends JFrame {
     }
 
     public void activeOnlineFriendIcon(java.util.List<String> onlineFriends) {
-        JLabel[] friendLabel = getFriendLabel();
-        if (onlineFriends == null) return;
-        for (String friendName : onlineFriends) {
-            for (JLabel jLabel : friendLabel) {
-                if (jLabel != null && jLabel.getText().equals(friendName)) {
-                    jLabel.setEnabled(true);
+        if (waitingReady()) {
+            JLabel[] friendLabel = getFriendLabel();
+            if (onlineFriends == null) return;
+            for (String friendName : onlineFriends) {
+                for (JLabel jLabel : friendLabel) {
+                    if (jLabel != null && jLabel.getText().equals(friendName)) {
+                        jLabel.setEnabled(true);
+                    }
                 }
             }
         }
+
     }
 
     public void activeNewOnlineFriendIcon(String s) {
-        JLabel[] friendLabel = getFriendLabel();
-        if (!s.isEmpty() && friendLabel != null) {
-            for (JLabel jLabel : friendLabel) {
-                if (jLabel != null && jLabel.getText().equals(s)) {
-                    jLabel.setEnabled(true);
+        if (waitingReady()) {
+            JLabel[] friendLabel = getFriendLabel();
+            if (!s.isEmpty() && friendLabel != null) {
+                for (JLabel jLabel : friendLabel) {
+                    if (jLabel != null && jLabel.getText().equals(s)) {
+                        jLabel.setEnabled(true);
+                    }
                 }
             }
         }

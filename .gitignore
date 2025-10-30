@@ -32,3 +32,6 @@ bin/
 
 ### Log files ###
 *.log
+
+### other
+.claude/
