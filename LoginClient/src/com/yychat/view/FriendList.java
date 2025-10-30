@@ -1,7 +1,6 @@
 package com.yychat.view;
 
-import com.yychat.api.Connection;
-import com.yychat.control.ClientReceiverThreadUDP;
+import com.yychat.ClientMain;
 import com.yychat.control.YYchatClientConnectionUDP;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
@@ -10,10 +9,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 

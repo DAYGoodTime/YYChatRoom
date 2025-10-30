@@ -1,18 +1,15 @@
 package com.yychat.view;
 
+import com.yychat.ClientMain;
 import com.yychat.api.Connection;
 import com.yychat.control.YYchatClientConnectionUDP;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
 
 import javax.swing.*;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.ByteArrayInputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -323,7 +320,7 @@ public class FriendChat extends JFrame implements KeyListener {
      */
     private com.yychat.model.User getCurrentUser() {
         try {
-            return com.yychat.view.ClientMain.getCurrentUser();
+            return ClientMain.getCurrentUser();
         } catch (Exception e) {
             System.err.println("无法获取当前用户信息: " + e.getMessage());
             return null;

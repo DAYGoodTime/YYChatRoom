@@ -1,5 +1,6 @@
 package com.yychat.view;
 
+import com.yychat.ClientMain;
 import com.yychat.control.YYchatClientConnectionUDP;
 import com.yychat.model.User;
 

@@ -1,5 +1,6 @@
 package com.yychat.view;
 
+import com.yychat.ClientMain;
 import com.yychat.api.Client;
 import com.yychat.api.Connection;
 import com.yychat.api.MessageThread;
@@ -11,7 +12,6 @@ import com.yychat.model.User;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +26,7 @@ public class ClientLoginUDP extends JFrame implements Client {
 
     public ClientLoginUDP() {
         // 设置窗口标题
-        setTitle("YY聊天 (UDP版本)");
+        setTitle("YY聊天");
 
         // 创建UI组件
         JLabel headImage = new JLabel(new ImageIcon("./res/head.gif"));
@@ -129,15 +129,15 @@ public class ClientLoginUDP extends JFrame implements Client {
                 YYchatClientConnectionUDP tempConnection = new YYchatClientConnectionUDP();
 
                 if (tempConnection.userSignup(user)) {
-                    JOptionPane.showMessageDialog(this, name + "UDP注册成功！");
+                    JOptionPane.showMessageDialog(this, name + "注册成功！");
                 } else {
-                    JOptionPane.showMessageDialog(this, name + "UDP注册失败！");
+                    JOptionPane.showMessageDialog(this, name + "注册失败！");
                 }
 
                 tempConnection.close();
             } catch (Exception e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "UDP注册失败：" + e.getMessage());
+                JOptionPane.showMessageDialog(this, "注册失败：" + e.getMessage());
             }
         });
 

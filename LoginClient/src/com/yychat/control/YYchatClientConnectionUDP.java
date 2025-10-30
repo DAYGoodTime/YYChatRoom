@@ -7,7 +7,7 @@ import com.yychat.model.Message;
 import com.yychat.model.MessageType;
 import com.yychat.model.Receiver;
 import com.yychat.model.User;
-import com.yychat.view.ClientMain;
+import com.yychat.ClientMain;
 
 import java.io.*;
 import java.net.*;

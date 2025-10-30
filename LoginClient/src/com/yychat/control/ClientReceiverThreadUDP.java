@@ -5,7 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.yychat.api.MessageThread;
 import com.yychat.model.Message;
 import com.yychat.model.MessageType;
-import com.yychat.view.ClientMain;
+import com.yychat.ClientMain;
 import com.yychat.view.FriendChat;
 import com.yychat.view.FriendList;
 
@@ -14,7 +14,6 @@ import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.List;
 
 /**
  * UDP版本的客户端接收线程，处理来自服务器的UDP消息
