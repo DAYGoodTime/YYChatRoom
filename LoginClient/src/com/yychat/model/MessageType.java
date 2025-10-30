@@ -1,10 +1,10 @@
 package com.yychat.model;
 
 public interface MessageType {
+    String EXIT = "-1";                     //退出
     String LOGIN_VALIDATE_SUCCESS = "1";    //登录成功
     String LOGIN_VALIDATE_FAILURE = "2";    //登录失败
     String COMMON_CHAT_MESSAGE = "3";       //聊天消息
-    String EXIT = "-1";                     //退出
     String REQUEST_ONLINE_FRIENDS = "4";    //请求在线好友
     String RESPONSE_ONLINE_FRIENDS = "5";   //请求在线好友的回应
     String NEW_ONLINE_TO_ALL_FRIENDS = "6"; //服务器广播给所有在线好友
@@ -26,9 +26,12 @@ public interface MessageType {
     String REQUEST_AVATAR = "22";              //请求用户头像
     String RESPONSE_AVATAR = "23";             //返回头像数据
     String UPDATE_AVATAR = "24";               //更新头像
-    String AVATAR_UPLOAD_SUCCESS = "25";       //头像上传成功
-    String REQUEST_AVATAR_DOWNLOAD = "26";     //请求下载头像文件
-    String RESPONSE_AVATAR_DOWNLOAD = "27";    //返回头像文件数据
-    String AVATAR_DOWNLOAD_SUCCESS = "28";     //头像下载成功
-    String AVATAR_DOWNLOAD_FAILURE = "29";     //头像下载失败
+
+    // TCP传输消息类型
+    String TCP_ACK = "100";// TCP处理确认
+    String TCP_FILE_UPLOAD = "101";// TCP文件上传请求
+    String TCP_FILE_UPLOAD_ACK = "102";// TCP文件上传处理确认
+    String TCP_FILE_DOWNLOAD = "103";
+
+
 }

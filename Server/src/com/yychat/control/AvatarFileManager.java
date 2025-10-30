@@ -1,11 +1,20 @@
 package com.yychat.control;
 
+import cn.hutool.json.JSONObject;
+import com.yychat.model.FriendType;
+import com.yychat.model.Message;
+import com.yychat.model.MessageType;
+
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+
+import static com.yychat.udp.UDPUtil.sendMessageToClient;
 
 /**
  * 头像文件管理系统
@@ -64,9 +73,10 @@ public class AvatarFileManager {
 
     /**
      * 保存头像文件（从字节数据）
-     * @param userName 用户名
+     *
+     * @param userName   用户名
      * @param avatarData 头像字节数据
-     * @param fileName 文件名
+     * @param fileName   文件名
      * @return 保存后的文件路径，如果失败返回null
      */
     public static String saveUserAvatarFromBytes(String userName, byte[] avatarData, String fileName) {
@@ -103,6 +113,12 @@ public class AvatarFileManager {
             Files.write(targetPath, avatarData);
 
             String relativePath = USER_AVATAR_DIR + "/" + userName + "/" + uniqueFileName;
+            //写入数据库
+            if (!DBUtil.updateUserAvatar(userName, relativePath)) {
+                System.out.println("数据库保存失败");
+                return null;
+            }
+            broadcastAvatarUpdate(userName, relativePath);
             System.out.println("用户 " + userName + " 头像已保存: " + relativePath);
 
             return relativePath;
@@ -115,7 +131,36 @@ public class AvatarFileManager {
     }
 
     /**
+     * 广播头像更新给所有在线好友
+     */
+    private static void broadcastAvatarUpdate(String userName, String avatarPath) {
+        Set<String> onlineFriendSet = YYchatServerUDP.getUserAddressMap().keySet();
+        List<String> friends = DBUtil.getAllFriends(userName, FriendType.NORMAL.getCode());
+
+        for (String friendName : friends) {
+            // 只广播给在线好友
+            if (onlineFriendSet.contains(friendName)) {
+                InetSocketAddress friendAddress = YYchatServerUDP.getUserAddress(friendName);
+                if (friendAddress != null) {
+                    Message broadcastMessage = new Message();
+                    broadcastMessage.setMessageType(MessageType.UPDATE_AVATAR);
+                    broadcastMessage.setReceiver(friendName);
+                    broadcastMessage.setSender("Server");
+                    broadcastMessage.setJsonMessage(new JSONObject()
+                            .set("avatarPath", avatarPath)
+                            .set("userName", userName)
+                    );
+                    broadcastMessage.setContent(userName + ":" + avatarPath); // 格式: 用户名:头像路径 (即将废弃)
+                    sendMessageToClient(friendAddress, broadcastMessage);
+                    System.out.println("向好友 " + friendName + " 广播用户 " + userName + " 的头像更新");
+                }
+            }
+        }
+    }
+
+    /**
      * 获取头像文件的绝对路径
+     *
      * @param avatarPath 相对路径
      * @return 绝对路径，如果文件不存在返回null
      */
@@ -142,6 +187,7 @@ public class AvatarFileManager {
 
     /**
      * 获取默认头像路径
+     *
      * @return 默认头像的绝对路径
      */
     public static String getDefaultAvatarPath() {
@@ -150,6 +196,7 @@ public class AvatarFileManager {
 
     /**
      * 获取指定默认头像路径
+     *
      * @param avatarFile 默认头像文件名
      * @return 默认头像的绝对路径
      */
@@ -170,6 +217,7 @@ public class AvatarFileManager {
 
     /**
      * 获取文件扩展名
+     *
      * @param fileName 文件名
      * @return 扩展名（不包含点）
      */
@@ -183,6 +231,7 @@ public class AvatarFileManager {
 
     /**
      * 获取头像文件的字节数据
+     *
      * @param avatarPath 头像路径
      * @return 头像字节数据，如果读取失败返回null
      */
@@ -205,6 +254,7 @@ public class AvatarFileManager {
 
     /**
      * 列出用户的所有头像文件
+     *
      * @param userName 用户名
      * @return 头像文件路径列表
      */

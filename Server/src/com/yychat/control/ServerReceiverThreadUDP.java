@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.yychat.udp.UDPUtil.sendMessageToClient;
+
 /**
  * UDP版本的服务器接收线程，处理无连接UDP消息
  * 由于UDP是无连接的，此线程主要处理特定用户的消息流
@@ -106,15 +108,6 @@ public class ServerReceiverThreadUDP implements Runnable {
                 case MessageType.REQUEST_AVATAR:
                     handleRequestAvatar(message);
                     break;
-
-                case MessageType.REQUEST_AVATAR_DOWNLOAD:
-                    handleRequestAvatarDownload(message);
-                    break;
-
-                case MessageType.UPDATE_AVATAR:
-                    handleUpdateAvatar(message);
-                    break;
-
                 default:
                     System.out.println("未处理的消息类型: " + message.getMessageType());
                     break;
@@ -232,32 +225,6 @@ public class ServerReceiverThreadUDP implements Runnable {
         sendMessageToClient(clientAddress, responseMessage);
     }
 
-    private void sendMessageToClient(InetSocketAddress clientAddress, Message message) {
-        try {
-            // 序列化消息
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(message);
-            oos.flush();
-
-            byte[] data = bos.toByteArray();
-
-            // 创建数据包并发送
-            DatagramPacket packet = new DatagramPacket(data, data.length, clientAddress);
-            if (datagramSocket == null || datagramSocket.isClosed()) {
-                datagramSocket = new DatagramSocket();
-            }
-            datagramSocket.send(packet);
-
-            System.out.println("向 " + clientAddress + " 发送消息: " + JSONUtil.toJsonStr(message));
-
-            oos.close();
-            bos.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void handelRequestUserList(String sender) {
         List<String> allUsers = DBUtil.getUnknowUsers(sender);
         Message responseMessage = new Message();
@@ -269,7 +236,7 @@ public class ServerReceiverThreadUDP implements Runnable {
     }
 
     /**
-     * 处理头像请求
+     * 处理获取头像请求
      */
     private void handleRequestAvatar(Message message) {
         String userName = message.getContent();
@@ -286,149 +253,6 @@ public class ServerReceiverThreadUDP implements Runnable {
 
         sendMessageToClient(clientAddress, response);
         System.out.println("向 " + message.getSender() + " 返回用户 " + userName + " 的头像路径: " + (avatarPath != null ? avatarPath : "0.jpg"));
-    }
-
-    /**
-     * 处理头像下载请求
-     */
-    private void handleRequestAvatarDownload(Message message) {
-        try {
-            String targetUserName = message.getReceiver();
-
-            // 获取目标用户的头像路径
-            String avatarPath = DBUtil.getUserAvatar(targetUserName);
-            if (avatarPath == null || avatarPath.trim().isEmpty()) {
-                avatarPath = "0.jpg"; // 使用默认头像
-            }
-
-            System.out.println("用户 " + message.getSender() + " 请求下载用户 " + targetUserName + " 的头像，路径: " + avatarPath);
-
-            // 从AvatarFileManager获取头像字节数据
-            byte[] avatarData = AvatarFileManager.getAvatarBytes(avatarPath);
-
-            Message response = new Message();
-            response.setReceiver(message.getSender());
-            response.setSender("Server");
-
-            if (avatarData != null && avatarData.length > 0) {
-                // 成功获取头像数据
-                response.setMessageType(MessageType.RESPONSE_AVATAR_DOWNLOAD);
-                response.setAvatarData(avatarData);
-                response.setAvatarFileName(extractFileNameFromPath(avatarPath));
-                response.setContent(avatarPath); // 设置头像路径
-
-                System.out.println("成功读取用户 " + targetUserName + " 的头像数据，大小: " + avatarData.length + " bytes");
-            } else {
-                // 头像文件不存在或读取失败
-                response.setMessageType(MessageType.RESPONSE_AVATAR_DOWNLOAD);
-                response.setContent("头像文件不存在: " + avatarPath);
-
-                System.err.println("无法读取用户 " + targetUserName + " 的头像文件: " + avatarPath);
-            }
-
-            sendMessageToClient(clientAddress, response);
-
-        } catch (Exception e) {
-            System.err.println("处理头像下载请求时发生错误: " + e.getMessage());
-            e.printStackTrace();
-
-            // 发送失败响应
-            Message errorResponse = new Message();
-            errorResponse.setReceiver(message.getSender());
-            errorResponse.setSender("Server");
-            errorResponse.setMessageType(MessageType.AVATAR_DOWNLOAD_FAILURE);
-            errorResponse.setContent("服务器内部错误: " + e.getMessage());
-
-            sendMessageToClient(clientAddress, errorResponse);
-        }
-    }
-
-    /**
-     * 从头像路径中提取文件名
-     */
-    private String extractFileNameFromPath(String avatarPath) {
-        if (avatarPath == null || avatarPath.trim().isEmpty()) {
-            return "default.jpg";
-        }
-
-        // 处理相对路径
-        if (avatarPath.contains("/")) {
-            return avatarPath.substring(avatarPath.lastIndexOf('/') + 1);
-        } else if (avatarPath.contains("\\")) {
-            return avatarPath.substring(avatarPath.lastIndexOf('\\') + 1);
-        } else {
-            return avatarPath;
-        }
-    }
-
-    /**
-     * 处理头像更新
-     */
-    private void handleUpdateAvatar(Message message) {
-        String userName = message.getSender();
-        String avatarPath = message.getContent();
-
-        System.out.println("用户 " + userName + " 更新头像为: " + avatarPath);
-
-        // 如果是自定义头像，可能需要处理头像文件
-        if (message.getAvatarData() != null && message.getAvatarFileName() != null) {
-            // 处理头像文件上传
-            String savedPath = AvatarFileManager.saveUserAvatarFromBytes(
-                    userName,
-                    message.getAvatarData(),
-                    message.getAvatarFileName()
-            );
-
-            if (savedPath != null) {
-                avatarPath = savedPath;
-                System.out.println("用户头像文件已保存: " + savedPath);
-            } else {
-                System.err.println("用户头像文件保存失败，使用原有路径");
-            }
-        }
-
-        // 更新数据库
-        boolean success = DBUtil.updateUserAvatar(userName, avatarPath);
-
-        if (success) {
-            // 发送成功响应给更新者
-            Message successResponse = new Message();
-            successResponse.setMessageType(MessageType.AVATAR_UPLOAD_SUCCESS);
-            successResponse.setReceiver(userName);
-            successResponse.setSender("Server");
-            successResponse.setContent(avatarPath);
-            sendMessageToClient(clientAddress, successResponse);
-
-            // 广播给所有好友
-            broadcastAvatarUpdate(userName, avatarPath);
-        } else {
-            System.out.println("用户 " + userName + " 头像更新失败");
-        }
-    }
-
-    /**
-     * 广播头像更新给所有在线好友
-     */
-    private void broadcastAvatarUpdate(String userName, String avatarPath) {
-        Set<String> onlineFriendSet = YYchatServerUDP.getUserAddressMap().keySet();
-        List<String> friends = DBUtil.getAllFriends(userName, FriendType.NORMAL.getCode());
-
-        for (String friendName : friends) {
-            // 只广播给在线好友
-            if (onlineFriendSet.contains(friendName)) {
-                InetSocketAddress friendAddress = YYchatServerUDP.getUserAddress(friendName);
-                if (friendAddress != null) {
-                    Message broadcastMessage = new Message();
-                    broadcastMessage.setMessageType(MessageType.UPDATE_AVATAR);
-                    broadcastMessage.setReceiver(friendName);
-                    broadcastMessage.setSender("Server");
-                    broadcastMessage.setContent(userName + ":" + avatarPath); // 格式: 用户名:头像路径
-
-                    sendMessageToClient(friendAddress, broadcastMessage);
-                    System.out.println("向好友 " + friendName + " 广播用户 " + userName + " 的头像更新");
-                }
-            }
-        }
     }
 
     public void stop() {

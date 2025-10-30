@@ -1,5 +1,7 @@
 package com.yychat.view;
 
+import com.yychat.tcp.YYchatServerTCP;
+
 import com.yychat.control.AvatarFileManager;
 import com.yychat.control.DBUtil;
 import com.yychat.control.YYchatServerUDP;
@@ -25,6 +27,11 @@ public class StartServerUDP {
         System.out.println("✓ 头像文件管理系统初始化完成");
 
         // 3. 启动UDP服务器
+        // 启动TCP服务器用于文件传输
+        YYchatServerTCP tcpServer = new YYchatServerTCP();
+        new Thread(tcpServer::start).start();
+        System.out.println("✓ TCP服务器启动成功 (端口 3457)");
+
         System.out.println("3. 启动聊天室服务器...");
         YYchatServerUDP serverUDP = new YYchatServerUDP();
         serverUDP.startServer();
