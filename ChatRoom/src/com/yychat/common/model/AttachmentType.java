@@ -1,7 +1,9 @@
 package com.yychat.common.model;
 
 public enum AttachmentType {
-    IMAGE_AVATAR(0,"image_avatar"),;
+    IMAGE_AVATAR(0,"image_avatar"),
+    MESSAGE_FILE(1,"message_file")
+    ;
     private final int code;
     private final String type;
     AttachmentType(int code, String type) {

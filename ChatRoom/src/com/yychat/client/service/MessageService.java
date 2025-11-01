@@ -4,9 +4,8 @@ import cn.hutool.crypto.digest.MD5;
 import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.common.model.*;
-import com.yychat.common.util.StringUtil;
 
-import java.util.UUID;
+import java.util.Optional;
 
 public class MessageService {
 
@@ -35,7 +34,7 @@ public class MessageService {
             e.printStackTrace();
             return ServiceResponse.error(e.getLocalizedMessage());
         }
-        return ServiceResponse.success(null);
+        return ServiceResponse.success(message);
     }
 
     public ServiceResponse<Message> sendFileMessageToUser(
@@ -50,13 +49,25 @@ public class MessageService {
         json.set("content", textContent);
         json.set("file_name", fileName);
         json.set("file_size", fileContent.length);
-        json.set("file_md5", MD5.create().digestHex(fileContent));
+        String fileMd5 = MD5.create().digestHex(fileContent);
+        json.set("file_md5", fileMd5);
         Message message = Message.builder()
                 .setMessageType(MessageType.COMMON_CHAT_MESSAGE)
                 .setSender(sender.getUserName())
                 .setReceiver(receiver.getUserName())
                 .setJsonMessage(json);
         try {
+            //先进行文件上传，以防接受者需要下载的时候还没上传完成
+            Message fileMessage = Message.builder()
+                    .setMessageType(Message.TCP_FILE_UPLOAD)
+                    .setSender(sender.getUserName())
+                    .setReceiver(SystemUser.Server.getStr())
+                    .setJsonMessage(new JSONObject().set("file_md5", fileMd5))
+                    .setAttachment(fileContent, byte[].class, AttachmentType.MESSAGE_FILE);
+            Optional<Message> fileUploadResponse = ClientMain.getTCPConnection().sendMessage(fileMessage);
+            if (!fileUploadResponse.isPresent()) {
+                return ServiceResponse.error("无法上传文件");
+            }
             //发送普通消息，附带附件需要的信息
             ClientMain.getUDPConnection().sendChatMessage(message);
         } catch (Exception e) {
@@ -65,5 +76,19 @@ public class MessageService {
         }
         return ServiceResponse.success(message);
 
+    }
+
+    public ServiceResponse<byte[]> downloadFileFromServer(String md5){
+        Message message = Message.builder()
+                .setMessageType(MessageType.TCP_FILE_DOWNLOAD)
+                .setSender(ClientMain.getCurrentUserName())
+                .setReceiver(SystemUser.Server.getStr())
+                .setJsonMessage(new JSONObject().set("file_md5", md5))
+                .setAttachmentType(AttachmentType.MESSAGE_FILE);
+        Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
+        if(!response.isPresent()) {
+            return ServiceResponse.error("无法下载文件");
+        }
+        return ServiceResponse.success(response.get().getAttachment(byte[].class));
     }
 }

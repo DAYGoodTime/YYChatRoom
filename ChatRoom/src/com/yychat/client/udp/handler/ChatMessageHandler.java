@@ -21,7 +21,7 @@ public class ChatMessageHandler {
             ServiceResponse<User> optionalReceiver = userService.queryUserInfoByUsername(message.getSender());
             User sender = Optional.ofNullable(optionalReceiver).map(ServiceResponse::getData).orElse(new User(message.getReceiver(), null));
             String chatKey = receiver.getUserName() + "to" + sender.getUserName();
-            System.out.println("收到来自 " + sender + " 的消息: " + message.getJson().getStr("content"));
+            System.out.println("收到来自 " + sender.getUserName() + " 的消息: " + message.getJson().getStr("content"));
             // 查找或创建聊天窗口
             FriendChat chat = FriendList.getFriendChat(chatKey);
             if(chat==null){

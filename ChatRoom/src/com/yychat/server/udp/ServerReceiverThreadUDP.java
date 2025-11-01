@@ -122,7 +122,6 @@ public class ServerReceiverThreadUDP implements Runnable {
         if (receiverAddress != null) {
             // 转发消息给接收方
             serverThread.sendMessageToClient(receiverAddress, message, null);
-            System.out.println("消息已转发给 " + message.getReceiver());
         } else {
             System.out.println(message.getReceiver() + " 不在线上");
         }

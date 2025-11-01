@@ -77,7 +77,11 @@ public class ClientMain {
         // 初始化TCP服务
         System.out.println("正在启动TCP服务");
         tcpClient = new TCPClient();
-        tcpClient.connect();
+        if(!tcpClient.connect()){
+            JOptionPane.showMessageDialog(new JPanel(),"无法启动,请检查服务器连接","启动失败",JOptionPane.ERROR_MESSAGE);
+            System.out.println("TCP启动失败，无法启动");
+            System.exit(0);
+        }
 
         // 检查命令行参数
         if (args.length >= 2) {

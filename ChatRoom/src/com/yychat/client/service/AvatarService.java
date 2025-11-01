@@ -20,22 +20,22 @@ public class AvatarService {
         return instance;
     }
 
-    public static final String USER_AVATAR_SUFFIX = "USER_AVATAR";
     public static final int AVATAR_SIZE = 40; // 头像显示大小
 
     public ServiceResponse<?> updateAvatarToServer(String selectedAvatarPath) {
         String username = ClientMain.getCurrentUserName();
         boolean isDefaultAvatar = selectedAvatarPath.contains(DEFAULT_AVATAR_PATH);
         File avatarfile = new File(selectedAvatarPath);
-        Message message = Message.builder()
-                .setMessageType(Message.TCP_FILE_UPLOAD)
-                .setSender(ClientMain.getCurrentUserName());
         JSONObject json = new JSONObject();
         json.set("username", username);
         json.set("is_default", isDefaultAvatar);
         json.set("filename", selectedAvatarPath);
-        message.setAttachment(FileUtil.readBytes(avatarfile), byte[].class, AttachmentType.IMAGE_AVATAR);
-        message.setJsonMessage(json);
+        Message message = Message.builder()
+                .setMessageType(Message.TCP_FILE_UPLOAD)
+                .setSender(ClientMain.getCurrentUserName())
+                .setReceiver(SystemUser.Server.getStr())
+                .setJsonMessage(json)
+                .setAttachment(FileUtil.readBytes(avatarfile), byte[].class, AttachmentType.IMAGE_AVATAR);
         Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
         if (!response.isPresent()) {
             return ServiceResponse.error("服务器失联");
@@ -132,7 +132,8 @@ public class AvatarService {
                     .setMessageType(Message.TCP_FILE_DOWNLOAD)
                     .setSender(ClientMain.getCurrentUserName())
                     .setReceiver(SystemUser.Server.getStr())
-                    .setJsonMessage(new JSONObject().set("username", userName));
+                    .setJsonMessage(new JSONObject().set("username", userName))
+                    .setAttachmentType(AttachmentType.IMAGE_AVATAR);
             Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
             if (!response.isPresent()) {
                 System.out.println("服务端无法返回头像");

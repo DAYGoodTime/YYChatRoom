@@ -11,6 +11,7 @@ public class Message implements Serializable, MessageType {
     private String MessageType;
     private String sender;
     private String receiver;
+    @Deprecated
     private String content;
     private final LocalDateTime time;
     private boolean isJsonMessage = false;
@@ -55,6 +56,12 @@ public class Message implements Serializable, MessageType {
         return this;
     }
 
+    public Message setAttachmentType(AttachmentType attachmentType) {
+        this.attachmentType = attachmentType;
+        return this;
+    }
+
+    @Deprecated
     public Message setContent(String content) {
         this.content = content;
         return this;
@@ -99,6 +106,7 @@ public class Message implements Serializable, MessageType {
         return receiver;
     }
 
+    @Deprecated
     public String getContent() {
         return content;
     }

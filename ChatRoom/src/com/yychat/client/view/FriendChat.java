@@ -137,8 +137,8 @@ public class FriendChat extends JFrame implements KeyListener {
     public void appendSendMessage(Message message, boolean received) {
         // 创建消息面板：左侧头像 + 右侧内容和时间
         JPanel messagePanel = new JPanel(new BorderLayout(10, 5));
-        // 左侧：发送者头像
-        JLabel avatarLabel = createAvatarLabel(senderAvatar);
+        // 左侧：发送|接受者者头像
+        JLabel avatarLabel = createAvatarLabel(received?receiverAvatar:senderAvatar);
         messagePanel.add(avatarLabel, BorderLayout.WEST);
         // 顶部：时间 + 发送者名称
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
@@ -166,12 +166,12 @@ public class FriendChat extends JFrame implements KeyListener {
 
         // 消息内容标签
         Component messageLabel;
-        switch (ChatMessageType.fromCode(message.getJson().getInt("chat_type",-1))){
+        switch (ChatMessageType.fromCode(message.getJson().getInt("chat_type", -1))) {
             case UserChatPainText:
                 messageLabel = appendTextMessage(message);
                 break;
             case UserChatFile:
-                messageLabel = appendFileMessage(message);
+                messageLabel = appendFileMessage(message,received);
                 break;
             case UnSupport:
             default:
@@ -210,11 +210,12 @@ public class FriendChat extends JFrame implements KeyListener {
         messageLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         return messageLabel;
     }
-    private Component appendFileMessage(Message message) {
-        String content = message.getJson().getStr("content","");
-        String fileName = message.getJson().getStr("file_name","");
-        String fileMd5 = message.getJson().getStr("file_md5","");
-        int fileSizeLength = message.getJson().getInt("file_size",-1);
+
+    private Component appendFileMessage(Message message,boolean received) {
+        String content = message.getJson().getStr("content", "");
+        String fileName = message.getJson().getStr("file_name", "");
+        String fileMd5 = message.getJson().getStr("file_md5", "");
+        int fileSizeLength = message.getJson().getInt("file_size", -1);
         // 创建主面板，垂直布局
         JPanel filePanel = new JPanel();
         filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.Y_AXIS));
@@ -233,8 +234,8 @@ public class FriendChat extends JFrame implements KeyListener {
         JPanel fileInfoPanel = new JPanel(new BorderLayout(10, 0));
         fileInfoPanel.setBackground(Color.WHITE);
         fileInfoPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(173, 216, 230), 1),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                BorderFactory.createLineBorder(new Color(173, 216, 230), 1),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)
         ));
 
         // 左侧：文件图标
@@ -274,15 +275,15 @@ public class FriendChat extends JFrame implements KeyListener {
         downloadButton.setBorderPainted(false);
         downloadButton.setFocusPainted(false);
 
-        // TODO: 稍后实现下载功能
-        downloadButton.addActionListener(e -> {
-            // 这里会实现下载功能
-            System.out.println("下载文件: " + fileName + ", MD5: " + fileMd5);
-        });
+        //注册文件下载逻辑
+        downloadButton.addActionListener(e -> handelFileDownload(fileName, fileMd5));
 
         // 组装右侧面板
         rightPanel.add(fileNameLabel, BorderLayout.CENTER);
-        rightPanel.add(downloadButton, BorderLayout.EAST);
+        // 自己发的消息就不用下载了
+        if(received){
+            rightPanel.add(downloadButton, BorderLayout.EAST);
+        }
 
         // 组装文件信息面板
         fileInfoPanel.add(fileIconLabel, BorderLayout.WEST);
@@ -431,24 +432,75 @@ public class FriendChat extends JFrame implements KeyListener {
     }
 
     /**
-     * 发送文件（当前只模拟发送过程）
+     * 发送文件
      */
     private void sendSelectedFile(String msg) {
         if (selectedFile == null) return;
         try {
             ServiceResponse<Message> response = MessageService.getInstance().sendFileMessageToUser(
                     sender, receiver, msg, FileUtil.readBytes(selectedFile), selectedFile.getName());
-            if(!response.isSuccess()) {
-                appendErrorMessage("文件发送失败: " +response.getMessage());
+            if (!response.isSuccess()) {
+                appendErrorMessage("文件发送失败: " + response.getMessage());
                 return;
             }
             Message responseMessage = response.getData();
-            appendSendMessage(responseMessage,false);
+            appendSendMessage(responseMessage, false);
             // 清除文件选择
             clearSelectedFile();
         } catch (Exception e) {
             // 显示发送失败消息
             appendErrorMessage("文件发送失败: " + e.getMessage());
+        }
+    }
+
+    private byte[] cachedDownloadFileBytes = null;
+
+    private void handelFileDownload(String fileName, String fileMd5) {
+        // 这里会实现下载功能
+        System.out.println("下载文件: " + fileName + ", MD5: " + fileMd5);
+        if (cachedDownloadFileBytes == null) {
+            ServiceResponse<byte[]> response = MessageService.getInstance().downloadFileFromServer(fileMd5);
+            if (!response.isSuccess()) {
+                JOptionPane.showMessageDialog(this, response.getMessage(), "下载文件失败", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            cachedDownloadFileBytes = response.getData();
+        }
+
+        // 创建文件保存选择器
+        JFileChooser saveFileChooser = new JFileChooser();
+        saveFileChooser.setDialogTitle("保存文件");
+        saveFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+        // 设置默认文件名
+        saveFileChooser.setSelectedFile(new File(fileName));
+
+        // 显示保存对话框
+        int userSelection = saveFileChooser.showSaveDialog(this);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = saveFileChooser.getSelectedFile();
+
+            try {
+                // 使用Hutool工具类保存文件
+                FileUtil.writeBytes(cachedDownloadFileBytes, fileToSave);
+
+                // 显示保存成功消息
+                JOptionPane.showMessageDialog(this,
+                        "文件已成功保存到:\n" + fileToSave.getAbsolutePath(),
+                        "下载完成",
+                        JOptionPane.INFORMATION_MESSAGE);
+                cachedDownloadFileBytes = null;
+            } catch (Exception e) {
+                // 处理保存失败的情况
+                JOptionPane.showMessageDialog(this,
+                        "保存文件时发生错误:\n" + e.getMessage(),
+                        "保存失败",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            // 用户取消保存
+            System.out.println("用户取消了文件保存操作");
         }
     }
 }

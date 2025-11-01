@@ -6,6 +6,7 @@ import com.yychat.common.model.AttachmentType;
 import com.yychat.common.model.Constant;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.SystemUser;
+import com.yychat.common.util.StringUtil;
 import com.yychat.server.util.DBUtil;
 
 import java.io.File;
@@ -91,7 +92,7 @@ public class AvatarFileManager {
             }
 
             // 验证文件扩展名
-            String extension = getFileExtension(fileName);
+            String extension = StringUtil.getFileExtension(fileName);
             if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
                 System.err.println("不支持的文件格式: " + extension);
                 return null;
@@ -183,20 +184,6 @@ public class AvatarFileManager {
             return Optional.empty();
         }
         return Optional.of(FileUtil.readBytes(avatarFile));
-    }
-
-    /**
-     * 获取文件扩展名
-     *
-     * @param fileName 文件名
-     * @return 扩展名（不包含点）
-     */
-    private static String getFileExtension(String fileName) {
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
-            return fileName.substring(lastDotIndex + 1).toLowerCase();
-        }
-        return "";
     }
 
 }

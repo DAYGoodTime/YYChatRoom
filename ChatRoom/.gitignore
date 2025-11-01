@@ -31,3 +31,4 @@ bin/
 ### User File ###
 avatars/users/
 res/UserAvatar/
+data/server/UserMessage/
