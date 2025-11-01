@@ -5,6 +5,7 @@ import com.yychat.client.ClientMain;
 import com.yychat.client.service.UserService;
 import com.yychat.client.view.FriendList;
 import com.yychat.common.model.Message;
+import com.yychat.common.model.User;
 
 import javax.swing.*;
 
@@ -16,7 +17,6 @@ public class UserServiceHandler {
         try {
             FriendList friendList = ClientMain.getFriendList();
             if (friendList != null && message.isJsonMessage()) {
-                //TODO make it obj list
                 JSONArray list = message.getJson().getJSONArray("list");
                 System.out.println("收到在线好友列表: " + list.toJSONString(0));
                 if (!list.isEmpty()) {
@@ -58,7 +58,7 @@ public class UserServiceHandler {
             System.out.println("收到好友列表: " + message.getJson().getJSONArray("list").toJSONString(0));
             new Thread(() -> {
                 //初始化的时候不要影响原线程
-                friendList.setFriendList(message.getJson().getJSONArray("list").toList(String.class));
+                friendList.setFriendList(message.getJson().getJSONArray("list").toList(User.class));
             }).start();
         }
     }
@@ -67,11 +67,10 @@ public class UserServiceHandler {
         try {
             FriendList friendList = ClientMain.getFriendList();
             if (friendList != null && message.isJsonMessage()) {
-                //TODO list of user obj
                 JSONArray list = message.getJson().getJSONArray("list");
                 System.out.println("收到陌生人列表: " + list.toJSONString(0));
                 if (!list.isEmpty()) {
-                    friendList.updateStrangerPanel(list.toList(String.class), false);
+                    friendList.updateStrangerPanel(list.toList(User.class), false);
                 }
             } else {
                 System.out.println("未找到陌生人窗口");

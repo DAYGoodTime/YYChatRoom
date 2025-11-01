@@ -149,8 +149,8 @@ public class ClientLogin extends JFrame {
         userService.broadcastNewFriendOnline();
 
         // 创建并显示用户信息窗口
-        MyInfo myInfo = new MyInfo(friendListWindow);
-        myInfo.setVisible(true);
+//        MyInfo myInfo = new MyInfo(friendListWindow);
+//        myInfo.setVisible(true);
     }
 
 }

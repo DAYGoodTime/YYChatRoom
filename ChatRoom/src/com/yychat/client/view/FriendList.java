@@ -222,6 +222,13 @@ public class FriendList extends JFrame {
                 if (e.getClickCount() == 2 && e.getSource() instanceof JLabel) {
                     JLabel label = (JLabel) e.getSource();
                     String clickedFriendName = label.getText();
+                    String chatKey = sender.getUserName() + "to" + clickedFriendName;
+                    FriendChat chat = friendChatMap.get(chatKey);
+                    if(chat != null){
+                        //如果已经打开了就不用创建,对其进行高亮
+                        chat.highlightChatWindow();
+                        return;
+                    }
                     //获取好友信息
                     ServiceResponse<User> optionalUser = UserService.getInstance().queryUserInfoByUsername(clickedFriendName);
                     if (!optionalUser.isSuccess()) {
@@ -229,8 +236,8 @@ public class FriendList extends JFrame {
                         return;
                     }
                     // 创建聊天窗口
-                    FriendChat chat = new FriendChat(sender, optionalUser.getData());
-                    friendChatMap.put(sender.getUserName() + "to" + clickedFriendName, chat);
+                    chat = new FriendChat(sender, optionalUser.getData());
+                    friendChatMap.put(chatKey, chat);
                 }
             }
 
@@ -263,8 +270,9 @@ public class FriendList extends JFrame {
     /**
      * 创建通用的JLabel好友标签（增强版 - 支持动态头像加载）
      */
-    private JLabel createFriendLabel(String friendName) {
-        ImageIcon icon = loadDynamicFriendIcon(friendName);
+    private JLabel createFriendLabel(User user) {
+        String friendName = user.getUserName();
+        ImageIcon icon = loadDynamicFriendIcon(user);
         JLabel label = new JLabel(friendName, icon, JLabel.LEFT);
         if (!friendName.equals(ClientMain.getCurrentUser().getUserName())) {
             label.setEnabled(false);
@@ -278,13 +286,14 @@ public class FriendList extends JFrame {
     /**
      * 动态加载好友头像（优先从缓存或服务器获取）
      */
-    private ImageIcon loadDynamicFriendIcon(String friendName) {
+    private ImageIcon loadDynamicFriendIcon(User user) {
+        String friendName = user.getUserName();
         // 先检查缓存
         if (avatarCache.containsKey(friendName)) {
             return avatarCache.get(friendName);
         }
         // 获取头像
-        ImageIcon icon = AvatarService.getInstance().loadUserAvatar(friendName);
+        ImageIcon icon = AvatarService.getInstance().loadUserAvatar(friendName, user.getAvatarPath());
         avatarCache.put(friendName, icon);
         return icon;
     }
@@ -295,7 +304,7 @@ public class FriendList extends JFrame {
     public void updateFriendAvatar(String friendName, String avatarPath) {
         JLabel friendLabel = friendLabelMap.get(friendName);
         if (friendLabel != null) {
-            ImageIcon newIcon = AvatarService.getInstance().loadUserAvatar(friendName);
+            ImageIcon newIcon = AvatarService.getInstance().loadUserAvatar(friendName, avatarPath);
             //更新缓存
             avatarCache.put(friendName, newIcon);
             System.out.println("已更新好友 " + friendName + " 的头像为（本地）: " + avatarPath);
@@ -306,23 +315,22 @@ public class FriendList extends JFrame {
     /**
      * 初始化陌生人列表
      */
-    public void updateStrangerPanel(java.util.List<String> strangers, boolean first) {
+    public void updateStrangerPanel(java.util.List<User> strangers, boolean first) {
         if (first || waitingReady()) {
             if (strangers == null) {
                 strangers = new java.util.ArrayList<>();
             }
             // 创建新的陌生人列表面板，使用单列布局
             strangerListPanel = new JPanel(new GridLayout(0, 1));
-            ImageIcon strangerIcon = ImageIconUtil.getStrangerIcon();
 
             // 添加所有陌生人标签
-            for (String stranger : strangers) {
-                if (stranger != null && !stranger.trim().isEmpty()) {
-                    JLabel strangerLabel = new JLabel(stranger, strangerIcon, JLabel.LEFT);
+            for (User stranger : strangers) {
+                if (stranger != null && !stranger.getUserName().trim().isEmpty()) {
+                    ImageIcon strangerIcon = AvatarService.getInstance().loadUserAvatar(stranger.getUserName(), stranger.getAvatarPath());
+                    JLabel strangerLabel = new JLabel(stranger.getUserName(), strangerIcon, JLabel.LEFT);
                     strangerListPanel.add(strangerLabel);
                 }
             }
-            //将陌生人列表添加到面板
 
             // 清理现有的ScrollPane（如果有）
             Component[] components = strangerPanel.getComponents();
@@ -384,7 +392,7 @@ public class FriendList extends JFrame {
     }
 
     public void addNewFriend(String friendName) {
-        JLabel label = createFriendLabel(friendName);
+        JLabel label = createFriendLabel(new User(friendName, null));
         friendListPanel.add(label);
         friendListPanel.revalidate();
         friendListPanel.repaint();
@@ -411,7 +419,7 @@ public class FriendList extends JFrame {
     /**
      * 设置好友列表
      */
-    public void setFriendList(java.util.List<String> friendList) {
+    public void setFriendList(java.util.List<User> friendList) {
         if (friendList == null || friendList.isEmpty()) {
             System.out.println("好友列表为空，无法设置");
             return;
@@ -431,14 +439,14 @@ public class FriendList extends JFrame {
     /**
      * 初始化好友列表面板
      */
-    private void initializeFriendListPanel(java.util.List<String> friendList) {
+    private void initializeFriendListPanel(java.util.List<User> friendList) {
         int friendListSize = friendList.size();
         friendListPanel = new JPanel(new GridLayout(0, 1)); // 单列布局
         friendLabel = new JLabel[friendListSize];
         for (int i = 0; i < friendListSize; i++) {
-            String friendName = friendList.get(i);
+            String friendName = friendList.get(i).getUserName();
             if (!StrUtil.isBlank(friendName)) {
-                friendLabel[i] = createFriendLabel(friendName);
+                friendLabel[i] = createFriendLabel(friendList.get(i));
                 friendListPanel.add(friendLabel[i]);
             }
         }

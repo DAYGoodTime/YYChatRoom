@@ -1,9 +1,11 @@
 package com.yychat.client.service;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.digest.MD5;
 import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.common.model.*;
+import com.yychat.common.util.ThumbnailGenerator;
 
 import java.util.Optional;
 
@@ -51,6 +53,29 @@ public class MessageService {
         json.set("file_size", fileContent.length);
         String fileMd5 = MD5.create().digestHex(fileContent);
         json.set("file_md5", fileMd5);
+
+        // 检查是否为图片文件，如果是则生成缩略图信息
+        boolean isImage = isImageFile(fileName);
+        json.set("is_image", isImage);
+        if (isImage) {
+            // 生成图片缩略图
+            ThumbnailGenerator.ThumbnailResult thumbnailResult = ThumbnailGenerator.generateThumbnailFromBytes(fileContent);
+            if (thumbnailResult.isSuccess()) {
+                // 将缩略图数据Base64编码后添加到JSON中
+                String thumbnailBase64 = Base64.encode(thumbnailResult.getThumbnailData());
+                json.set("thumbnail_data", thumbnailBase64);
+                json.set("thumbnail_width", thumbnailResult.getThumbnailWidth());
+                json.set("thumbnail_height", thumbnailResult.getThumbnailHeight());
+                //从result处获取
+                json.set("original_width", thumbnailResult.getOriginalWidth());
+                json.set("original_height", thumbnailResult.getOriginalHeight());
+                json.set("image_format", thumbnailResult.getFormat());
+            } else {
+                System.out.println("缩略图生成失败: " + thumbnailResult.getErrorMessage());
+                // 即使缩略图生成失败，文件传输仍可继续
+            }
+        }
+
         Message message = Message.builder()
                 .setMessageType(MessageType.COMMON_CHAT_MESSAGE)
                 .setSender(sender.getUserName())
@@ -76,6 +101,22 @@ public class MessageService {
         }
         return ServiceResponse.success(message);
 
+    }
+
+    /**
+     * 检查文件是否为支持的图片格式
+     */
+    private boolean isImageFile(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return false;
+        }
+
+        String lowerFileName = fileName.toLowerCase();
+        return lowerFileName.endsWith(".jpg") ||
+               lowerFileName.endsWith(".jpeg") ||
+               lowerFileName.endsWith(".png") ||
+               lowerFileName.endsWith(".gif") ||
+               lowerFileName.endsWith(".bmp");
     }
 
     public ServiceResponse<byte[]> downloadFileFromServer(String md5){

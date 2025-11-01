@@ -93,13 +93,14 @@ public class DBUtil {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return new ArrayList<>();
         }
         return friendList;
     }
 
-    public static List<String> getUnknowUsers(String userName) {
-        List<String> result = new ArrayList<>();
-        String query = "select u.username from user as u " +
+    public static List<User> getUnknowUsers(String userName) {
+        List<User> result = new ArrayList<>();
+        String query = "select u.username,u.avatar_path from user as u " +
                 "left join userrelation as ur on u.username = ur.slaveuser and ur.masteruser =? " +
                 "where ur.masteruser is null and u.username !=?";
         PreparedStatement statement = null;
@@ -109,7 +110,7 @@ public class DBUtil {
             statement.setString(2, userName);
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
-                result.add(rs.getString(1));
+                result.add(new  User(rs.getString(1),null, rs.getString(2)));
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -134,10 +134,11 @@ public class ServerReceiverThreadUDP implements Runnable {
     }
 
     private void handleRequestOnlineFriends(Message message) {
-        //TODO send result as user obj
         Set<String> onlineFriendSet = serverThread.getUserAddressMap().keySet();
         List<String> allFriends = DBUtil.getAllFriends(message.getSender(), FriendType.NORMAL.getCode());
-        List<String> onlineFriendList = allFriends.stream().filter(onlineFriendSet::contains).collect(Collectors.toList());
+        List<String> onlineFriendList = allFriends.stream()
+                .filter(onlineFriendSet::contains)
+                .collect(Collectors.toList());
         Message response = Message.builder()
                 .setReceiver(message.getSender())
                 .setSender(SystemUser.Server.getStr())
@@ -159,8 +160,10 @@ public class ServerReceiverThreadUDP implements Runnable {
     }
 
     private void handleRequestFriendList(Message message) {
-        //TODO send result as user obj
-        List<String> allFriends = DBUtil.getAllFriends(message.getSender(), 1);
+        List<User> allFriends = DBUtil.getAllFriends(message.getSender(), 1).stream()
+                .map(s->userService.queryUserInfoByUserName(s).getData())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
         Message response = Message.builder()
                 .setJsonMessage(new JSONObject().set("list", allFriends))
                 .setMessageType(MessageType.REQUEST_FRIEND_LIST)
@@ -197,8 +200,7 @@ public class ServerReceiverThreadUDP implements Runnable {
     }
 
     private void handelRequestUnkUsers(Message message) {
-        //TODO send result as user obj
-        List<String> unknownUsers = DBUtil.getUnknowUsers(message.getSender());
+        List<User> unknownUsers = DBUtil.getUnknowUsers(message.getSender());
         Message response = Message.builder()
                 .setJsonMessage(new JSONObject().set("list", unknownUsers))
                 .setMessageType(MessageType.REQUEST_UNK_USER_LIST)
