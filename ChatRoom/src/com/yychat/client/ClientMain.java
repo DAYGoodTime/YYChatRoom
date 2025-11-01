@@ -59,10 +59,12 @@ public class ClientMain {
             System.out.println("客户端正在关闭...");
             UDPClientConnection connection = getUDPConnection();
             connection.close();
-            getTCPConnection().disconnect();
+            getTCPConnection().shutdown();
         }));
         // 初始化TCP服务
+        System.out.println("正在启动TCP服务");
         tcpClient = new TCPClient();
+        tcpClient.connect();
         // 启动登录界面
         System.out.println("启动登录界面");
         SwingUtilities.invokeLater(() -> LoginWindow = new ClientLogin());

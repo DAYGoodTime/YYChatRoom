@@ -18,6 +18,8 @@ public interface MessageType {
     String TCP_ACK = "100";// TCP处理确认
     String TCP_FILE_UPLOAD = "101"; //TCP文件上传
     String TCP_FILE_DOWNLOAD = "102";
+    String TCP_HEARTBEAT = "103"; // TCP心跳消息
+    String TCP_HEARTBEAT_ACK = "104"; // TCP心跳响应
 
 
 }

@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * TCP接收线程，用于处理单个客户端的文件传输连接
@@ -40,15 +41,36 @@ public class ServerReceiverThreadTCP implements Runnable {
     @Override
     public void run() {
         try {
-            while (running) {
-                Object obj = ois.readObject();
-                if (obj instanceof Message) {
-                    Message message = (Message) obj;
-                    handleMessage(message);
+            while (running && !socket.isClosed()) {
+                try {
+                    Object obj = ois.readObject();
+                    if (obj instanceof Message) {
+                        Message message = (Message) obj;
+                        // 异步处理消息，提高并发性能
+                        new Thread(() -> handleMessage(message), "TCP-Message-Handler").start();
+                    }
+                } catch (SocketException e) {
+                    if (running) {
+                        System.err.println("客户端连接异常断开: " + e.getMessage());
+                    }
+                    break;
+                } catch (EOFException e) {
+                    System.out.println("客户端正常断开连接");
+                    break;
+                } catch (IOException e) {
+                    if (running) {
+                        System.err.println("TCP消息接收异常: " + e.getMessage());
+                    }
+                    break;
+                } catch (ClassNotFoundException e) {
+                    System.err.println("消息类型不存在: " + e.getMessage());
                 }
             }
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
+        } finally {
+            if (running) {
+                System.out.println("TCP连接线程意外结束，关闭连接");
+            }
+            closeConnection();
         }
     }
 
@@ -64,6 +86,15 @@ public class ServerReceiverThreadTCP implements Runnable {
                 break;
             case MessageType.TCP_ACK:
                 response = message.setSender(message.getReceiver()).setReceiver(message.getSender());
+                break;
+            case MessageType.TCP_HEARTBEAT:
+                // 处理心跳消息，发送心跳响应
+                System.out.println("收到心跳消息 from " + message.getSender());
+                response = Message.builder()
+                        .setMessageType(MessageType.TCP_HEARTBEAT_ACK)
+                        .setSender(SystemUser.Server.getStr())
+                        .setReceiver(message.getSender())
+                        .setJsonMessage(new JSONObject().set("status", "OK").set("timestamp", System.currentTimeMillis()));
                 break;
             default:
                 System.out.println("非支持的消息类型: " + message.getMessageType() + " 已丢弃");
@@ -84,11 +115,33 @@ public class ServerReceiverThreadTCP implements Runnable {
 
     private void sendResponse(Message message) {
         try {
-            oos.writeObject(message);
-            oos.flush();
+            // 检查连接状态
+            if (socket.isClosed() || !socket.isConnected()) {
+                System.err.println("连接已关闭，无法发送响应");
+                running = false;
+                return;
+            }
+
+            synchronized (oos) {
+                oos.writeObject(message);
+                oos.flush();
+                System.out.println("成功发送响应给 " + message.getReceiver());
+            }
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("发送响应失败");
+            System.err.println("发送响应失败: " + e.getMessage());
+            running = false; // 停止处理，连接可能已断开
+        }
+    }
+
+    /**
+     * 检查连接是否仍然有效
+     */
+    private boolean isConnectionValid() {
+        try {
+            return socket != null && !socket.isClosed() && socket.isConnected() &&
+                   !socket.isInputShutdown() && !socket.isOutputShutdown();
+        } catch (Exception e) {
+            return false;
         }
     }
 
