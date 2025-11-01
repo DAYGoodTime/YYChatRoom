@@ -1,8 +1,12 @@
 package com.yychat.client.service;
 
+import cn.hutool.crypto.digest.MD5;
 import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.common.model.*;
+import com.yychat.common.util.StringUtil;
+
+import java.util.UUID;
 
 public class MessageService {
 
@@ -12,7 +16,7 @@ public class MessageService {
         return instance;
     }
 
-    public ServiceResponse<?> sendPlainTextMessageToUser(
+    public ServiceResponse<Message> sendPlainTextMessageToUser(
             User sender,
             User receiver,
             String textContent
@@ -32,5 +36,34 @@ public class MessageService {
             return ServiceResponse.error(e.getLocalizedMessage());
         }
         return ServiceResponse.success(null);
+    }
+
+    public ServiceResponse<Message> sendFileMessageToUser(
+            User sender,
+            User receiver,
+            String textContent,
+            byte[] fileContent,
+            String fileName
+    ) {
+        JSONObject json = new JSONObject();
+        json.set("chat_type", ChatMessageType.UserChatFile.getCode());
+        json.set("content", textContent);
+        json.set("file_name", fileName);
+        json.set("file_size", fileContent.length);
+        json.set("file_md5", MD5.create().digestHex(fileContent));
+        Message message = Message.builder()
+                .setMessageType(MessageType.COMMON_CHAT_MESSAGE)
+                .setSender(sender.getUserName())
+                .setReceiver(receiver.getUserName())
+                .setJsonMessage(json);
+        try {
+            //发送普通消息，附带附件需要的信息
+            ClientMain.getUDPConnection().sendChatMessage(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ServiceResponse.error(e.getLocalizedMessage());
+        }
+        return ServiceResponse.success(message);
+
     }
 }

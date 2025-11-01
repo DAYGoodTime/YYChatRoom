@@ -1,7 +1,9 @@
 package com.yychat.common.model;
 
 public enum ChatMessageType {
+    UnSupport(-1,"UnSupport"),
     UserChatPainText(0, "UserChatPainText"),
+    UserChatFile(1, "UserChatFile")
     ;
     private final int code;
     private final String type;
@@ -23,12 +25,12 @@ public enum ChatMessageType {
                 "}";
     }
 
-    public static ChatMessageType fromCode(int code) {
+    public static ChatMessageType fromCode(Integer code) {
         for (ChatMessageType type : ChatMessageType.values()) {
             if (type.getCode() == code) {
                 return type;
             }
         }
-        return null;
+        return ChatMessageType.UnSupport;
     }
 }

@@ -115,19 +115,10 @@ public class ServerReceiverThreadUDP implements Runnable {
     }
 
     private void handleChatMessage(Message message) {
-        //TODO chat
-        JSONObject json = message.getJson();
-        String content = json.getStr("content");
-        System.out.println(message.getSender()
-                + " 对 " + message.getReceiver()
-                + " 说: " + content);
-
         // 记录聊天消息到数据库
-        DBUtil.insertChatMessage(message.getSender(), message.getReceiver(), content, message.getTime());
-
+        DBUtil.insertChatMessage(message.getSender(), message.getReceiver(), message.getJson().toJSONString(0), message.getTime());
         // 获取接收方的地址
         InetSocketAddress receiverAddress = serverThread.getUserAddress(message.getReceiver());
-
         if (receiverAddress != null) {
             // 转发消息给接收方
             serverThread.sendMessageToClient(receiverAddress, message, null);
