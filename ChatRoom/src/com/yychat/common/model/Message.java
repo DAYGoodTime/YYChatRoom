@@ -40,11 +40,12 @@ public class Message implements Serializable, MessageType {
     }
 
     // Special Setter
-    public <T> void setAttachment(T attachment, Class<T> clz, AttachmentType type) {
+    public <T> Message setAttachment(T attachment, Class<T> clz, AttachmentType type) {
         this.attachment = true;
         this.attachmentObject = attachment;
         this.attachmentClass = clz;
         this.attachmentType = type;
+        return this;
     }
 
     // Setter

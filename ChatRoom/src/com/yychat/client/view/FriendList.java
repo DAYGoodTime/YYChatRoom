@@ -13,6 +13,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +33,9 @@ public class FriendList extends JFrame {
     protected JPanel strangerPanel;
     private final static HashMap<String, FriendChat> friendChatMap = new HashMap<String, FriendChat>();
 
-    private final CountDownLatch initializationLatch;
-    private final CountDownLatch friendListLatch;
+    private CountDownLatch initializationLatch;
+    private CountDownLatch friendListLatch;
+
 
     // 头像相关字段
     private final HashMap<String, ImageIcon> avatarCache = new HashMap<String, ImageIcon>(); // 头像缓存
@@ -46,9 +50,8 @@ public class FriendList extends JFrame {
     }
 
     public FriendList() {
-        this.initializationLatch = new CountDownLatch(1);
-        this.friendListLatch = new CountDownLatch(1);
-
+        initializationLatch = new CountDownLatch(1);
+        friendListLatch = new CountDownLatch(1);
         initializeComponents();
         initializeFrame();
         setFrameVisible();
@@ -301,14 +304,6 @@ public class FriendList extends JFrame {
     }
 
     /**
-     * 清除头像缓存（用于强制重新加载）
-     */
-    public void clearAvatarCache() {
-        avatarCache.clear();
-        System.out.println("已清除头像缓存");
-    }
-
-    /**
      * 初始化陌生人列表
      */
     public void updateStrangerPanel(java.util.List<String> strangers, boolean first) {
@@ -350,35 +345,29 @@ public class FriendList extends JFrame {
         }
     }
 
-
     public JLabel[] getFriendLabel() {
-        // 使用CountDownLatch等待好友列表初始化完成
         try {
-            if (!initializationLatch.await(120, java.util.concurrent.TimeUnit.SECONDS)) {
-                System.out.println("处理好友超时，已跳过");
+            if (!friendListLatch.await(20, TimeUnit.SECONDS)) {
+                System.out.println("好友列表获取超时");
                 return null;
             }
+            return friendLabel;
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println("等待好友列表初始化时发生中断");
+            System.out.println("好友列表获取超时");
             return null;
         }
-        return friendLabel;
     }
 
     public void activeOnlineFriendIcon(java.util.List<String> onlineFriends) {
-        if (waitingReady()) {
-            JLabel[] friendLabel = getFriendLabel();
-            if (onlineFriends == null) return;
-            for (String friendName : onlineFriends) {
-                for (JLabel jLabel : friendLabel) {
-                    if (jLabel != null && jLabel.getText().equals(friendName)) {
-                        jLabel.setEnabled(true);
-                    }
+        JLabel[] friendLabelList = getFriendLabel();
+        if (onlineFriends == null) return;
+        for (String friendName : onlineFriends) {
+            for (JLabel jLabel : friendLabelList) {
+                if (jLabel != null && jLabel.getText().equals(friendName)) {
+                    jLabel.setEnabled(true);
                 }
             }
         }
-
     }
 
     public void activeNewOnlineFriendIcon(String s) {
@@ -410,6 +399,7 @@ public class FriendList extends JFrame {
                 System.out.println("初始化失败");
                 return false;
             }
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             System.out.println("等待初始化时被中断");
@@ -426,16 +416,12 @@ public class FriendList extends JFrame {
             System.out.println("好友列表为空，无法设置");
             return;
         }
-
         if (!waitingReady()) {
             System.out.println("窗口初始化未完成，无法设置好友列表");
             return;
         }
-
         try {
             initializeFriendListPanel(friendList);
-            // 标记好友列表设置完成
-            friendListLatch.countDown();
         } catch (Exception e) {
             System.err.println("设置好友列表时发生错误: " + e.getMessage());
             e.printStackTrace();
@@ -449,7 +435,6 @@ public class FriendList extends JFrame {
         int friendListSize = friendList.size();
         friendListPanel = new JPanel(new GridLayout(0, 1)); // 单列布局
         friendLabel = new JLabel[friendListSize];
-
         for (int i = 0; i < friendListSize; i++) {
             String friendName = friendList.get(i);
             if (!StrUtil.isBlank(friendName)) {
@@ -457,8 +442,8 @@ public class FriendList extends JFrame {
                 friendListPanel.add(friendLabel[i]);
             }
         }
-
         addFriendListToPanel();
+        friendListLatch.countDown();
     }
 
     /**
@@ -477,33 +462,4 @@ public class FriendList extends JFrame {
         panel.revalidate();
         panel.repaint();
     }
-
-    /**
-     * 清理资源
-     */
-    public void cleanup() {
-        try {
-            // 清理好友聊天窗口映射
-            if (friendChatMap != null) {
-                for (FriendChat chat : friendChatMap.values()) {
-                    if (chat != null) {
-                        chat.dispose();
-                    }
-                }
-                friendChatMap.clear();
-            }
-
-            // 清理CountDownLatch
-            if (initializationLatch != null) {
-                initializationLatch.countDown();
-            }
-            if (friendListLatch != null) {
-                friendListLatch.countDown();
-            }
-
-        } catch (Exception e) {
-            System.err.println("清理资源时发生错误: " + e.getMessage());
-        }
-    }
-
 }

@@ -1,14 +1,21 @@
 package com.yychat.server.service;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONObject;
+import com.yychat.common.model.AttachmentType;
 import com.yychat.common.model.Constant;
+import com.yychat.common.model.Message;
+import com.yychat.common.model.SystemUser;
 import com.yychat.server.util.DBUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 头像文件管理系统
@@ -94,7 +101,7 @@ public class AvatarFileManager {
             String uniqueFileName = userName + "_" + System.currentTimeMillis() + "." + extension;
 
             // 用户头像目录
-            Path userDir = Paths.get(AVATAR_BASE_DIR, USER_AVATAR_DIR, userName);
+            Path userDir = Paths.get(AVATAR_BASE_DIR, USER_AVATAR_DIR);
             Files.createDirectories(userDir);
 
             // 目标文件路径
@@ -103,21 +110,79 @@ public class AvatarFileManager {
             // 写入文件
             Files.write(targetPath, avatarData);
 
-            String relativePath = USER_AVATAR_DIR + "/" + userName + "/" + uniqueFileName;
+            String avatarPath = Constant.USER_CUSTOM_AVATAR_PATH + uniqueFileName;
+
             //写入数据库
-            if (!DBUtil.updateUserAvatar(userName, relativePath)) {
+            if (!DBUtil.updateUserAvatar(userName, avatarPath)) {
                 System.out.println("数据库保存失败");
                 return null;
             }
-            System.out.println("用户 " + userName + " 头像已保存: " + relativePath);
+            System.out.println("用户 " + userName + " 头像已保存: " + avatarPath);
 
-            return relativePath;
+            return avatarPath;
 
         } catch (IOException e) {
             System.err.println("保存用户头像失败: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static String saveUserAvatarWithDefaultAvatar(String userName, String fileName) {
+        //写入数据库
+        if (!DBUtil.updateUserAvatar(userName, fileName)) {
+            System.out.println("数据库保存失败");
+            return null;
+        }
+        System.out.println("用户 " + userName + " 头像已保存: " + fileName);
+        return fileName;
+    }
+
+    public static Message handelUserAvatarDownload(Message message) {
+        Message response = Message.builder()
+                .setMessageType(message.getMessageType())
+                .setSender(SystemUser.Server.getStr())
+                .setReceiver(message.getSender());
+        JSONObject json = new JSONObject();
+        if (!message.isJsonMessage()) {
+            json.set("success", false);
+            json.set("message", "无效的请求");
+            response.setJsonMessage(json);
+            return response;
+        }
+        String username = message.getJson().getStr("username", "");
+        String avatarPath = DBUtil.getUserAvatar(username);
+        Optional<byte[]> image = AvatarFileManager.getUserAvatarFromBytes(username, avatarPath);
+        if (!image.isPresent()) {
+            json.set("success", false);
+            json.set("message", "服务器无法获取此头像");
+            response.setJsonMessage(json);
+            return response;
+        }
+        json.set("success", true);
+        json.set("filename", avatarPath);
+        response.setJsonMessage(json);
+        response.setAttachment(image.get(), byte[].class, AttachmentType.IMAGE_AVATAR);
+        return response;
+    }
+
+    private static Optional<byte[]> getUserAvatarFromBytes(String userName, String avatarPath) {
+
+        if (avatarPath.contains(Constant.DEFAULT_AVATAR_PATH)) {
+            //默认头像，返回空
+            return Optional.empty();
+        }
+        String avatarRelativePath = avatarPath.replace(Constant.USER_CUSTOM_AVATAR_PATH, "");
+        // 用户头像目录
+        Path userDir = Paths.get(AVATAR_BASE_DIR, USER_AVATAR_DIR);
+        // 目标文件路径
+        Path targetPath = userDir.resolve(avatarRelativePath);
+        File avatarFile = new File(targetPath.toString());
+        if (!avatarFile.exists()) {
+            System.out.println("从本地无法读取头像：" + avatarPath);
+            return Optional.empty();
+        }
+        return Optional.of(FileUtil.readBytes(avatarFile));
     }
 
     /**

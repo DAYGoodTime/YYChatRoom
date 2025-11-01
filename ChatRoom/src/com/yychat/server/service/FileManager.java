@@ -1,7 +1,6 @@
 package com.yychat.server.service;
 
 import cn.hutool.json.JSONObject;
-import com.yychat.common.model.FileMessage;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.SystemUser;
 
@@ -18,22 +17,6 @@ public class FileManager {
     }
 
     public Message handelFileMessage(Message message) {
-        if (!message.hasAttachment()) {
-            return logError("非附件消息，已丢弃", message);
-        }
-        if (!message.isJsonMessage()
-                || message.getJson().getStr("username") == null
-                || message.getJson().getStr("filename") == null
-        ) {
-            return logError("附件信息丢失，已丢弃", message);
-        }
-
-        try {
-            message.getAttachment(FileMessage.class);
-        } catch (ClassCastException | IllegalArgumentException e) {
-            return logError("附件无法获取，已丢弃", message);
-        }
-
         switch (message.getAttachmentType()) {
             case IMAGE_AVATAR:
                 return processAvatarUpload(message);
@@ -45,8 +28,14 @@ public class FileManager {
     private Message processAvatarUpload(Message message) {
         String username = message.getJson().getStr("username");
         String fileName = message.getJson().getStr("filename");
-        FileMessage attachment = message.getAttachment(FileMessage.class);
-        String path = AvatarFileManager.saveUserAvatarFromBytes(username, attachment.getFileContent(), fileName);
+        boolean isDefault = message.getJson().getBool("is_default");
+        String path;
+        if (isDefault) {
+            path = AvatarFileManager.saveUserAvatarWithDefaultAvatar(username, fileName);
+        } else {
+            byte[] attachment = message.getAttachment(byte[].class);
+            path = AvatarFileManager.saveUserAvatarFromBytes(username, attachment, fileName);
+        }
         if (path == null) {
             return logError("保存头像失败", message);
         }

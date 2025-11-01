@@ -1,5 +1,6 @@
 package com.yychat.client;
 
+import com.yychat.client.tcp.TCPClient;
 import com.yychat.client.udp.UDPClientConnection;
 import com.yychat.client.view.ClientLogin;
 import com.yychat.client.view.FriendList;
@@ -10,31 +11,44 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ClientMain {
-
     public static ExecutorService backgroundThreadPool = Executors.newFixedThreadPool(10);
 
-
-
     private static User currentUser;
+
     public static User getCurrentUser() {
         return currentUser;
     }
+
     public static String getCurrentUserName() {
         return currentUser.getUserName();
     }
+
     public static void setCurrentUser(User currentUser) {
         ClientMain.currentUser = currentUser;
     }
 
     private static ClientLogin LoginWindow;
-    public  static ClientLogin getLoginWindow(){return LoginWindow;}
-    public static FriendList getFriendList(){
+
+    public static ClientLogin getLoginWindow() {
+        return LoginWindow;
+    }
+
+    public static FriendList getFriendList() {
         return getLoginWindow().getFriendList();
     }
 
 
     private static UDPClientConnection udpConnection;
-    public static UDPClientConnection getUDPConnection(){return udpConnection;}
+
+    public static UDPClientConnection getUDPConnection() {
+        return udpConnection;
+    }
+
+    private static TCPClient tcpClient;
+
+    public static TCPClient getTCPConnection() {
+        return tcpClient;
+    }
 
     public static void main(String[] args) {
         System.out.println("初始化客户端中");
@@ -45,9 +59,12 @@ public class ClientMain {
             System.out.println("客户端正在关闭...");
             UDPClientConnection connection = getUDPConnection();
             connection.close();
+            getTCPConnection().disconnect();
         }));
+        // 初始化TCP服务
+        tcpClient = new TCPClient();
         // 启动登录界面
         System.out.println("启动登录界面");
-        SwingUtilities.invokeLater(()->LoginWindow = new ClientLogin());
+        SwingUtilities.invokeLater(() -> LoginWindow = new ClientLogin());
     }
 }

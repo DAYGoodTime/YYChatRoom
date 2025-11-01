@@ -2,15 +2,12 @@ package com.yychat.client.view;
 
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
-import com.yychat.common.model.ServiceResponse;
 import com.yychat.common.model.Constant;
+import com.yychat.common.model.ServiceResponse;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
 /**
  * 头像选择器对话框
@@ -29,12 +26,12 @@ public class AvatarSelector extends JDialog {
     private static final String[] DEFAULT_AVATARS = {
             "0.jpg", "1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"
     };
-
+    private final MyInfo parent;
 
     public AvatarSelector(Frame parent) {
         super(parent, "选择头像", true);
         this.friendList = ClientMain.getFriendList();
-
+        this.parent = (MyInfo) parent;
         initializeComponents();
         layoutComponents();
         setupEventListeners();
@@ -132,7 +129,7 @@ public class AvatarSelector extends JDialog {
                 avatarPanel.addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
                     public void mouseClicked(java.awt.event.MouseEvent e) {
-                        selectAvatar(avatarPath);
+                        selectAvatar(Constant.DEFAULT_AVATAR_PATH + avatarPath);
                     }
 
                     @Override
@@ -180,7 +177,7 @@ public class AvatarSelector extends JDialog {
         for (int i = 0; i < components.length; i++) {
             if (components[i] instanceof JPanel) {
                 JPanel panel = (JPanel) components[i];
-                String avatarPath = DEFAULT_AVATARS[i];
+                String avatarPath = Constant.DEFAULT_AVATAR_PATH + DEFAULT_AVATARS[i];
                 panel.setBorder(BorderFactory.createLineBorder(
                         avatarPath.equals(selectedAvatarPath) ? Color.BLUE : Color.GRAY));
             }
@@ -192,15 +189,7 @@ public class AvatarSelector extends JDialog {
      */
     private void updatePreview(String avatarPath) {
         try {
-            ImageIcon icon;
-            // 根据路径类型确定完整路径
-            if (avatarPath.startsWith("avatars/")) {
-                // 自定义头像：使用完整路径
-                icon = new ImageIcon(avatarPath);
-            } else {
-                // 默认头像：使用res目录
-                icon = new ImageIcon("res/" + avatarPath);
-            }
+            ImageIcon icon = new ImageIcon(avatarPath);
             // 缩放头像到预览大小
             Image scaledImage = icon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
             previewLabel.setIcon(new ImageIcon(scaledImage));
@@ -228,6 +217,7 @@ public class AvatarSelector extends JDialog {
         // 发送头像更新消息到服务器
         sendAvatarUpdateToServer();
         dispose();
+        parent.updateAvatar();
     }
 
     /**
@@ -270,33 +260,13 @@ public class AvatarSelector extends JDialog {
             }
 
             try {
-                // 创建avatars目录（如果不存在）
-                File avatarsDir = new File(Constant.USER_CUSTOM_AVATAR_PATH);
-                if (!avatarsDir.exists()) {
-                    avatarsDir.mkdirs();
-                }
-
-                // 生成唯一的头像文件名
-                String uniqueFileName = AvatarService.USER_AVATAR_SUFFIX + ClientMain.getCurrentUserName() + "_" + fileName;
-                File targetFile = new File(avatarsDir, uniqueFileName);
-
-                // 复制文件到avatars目录
-                copyFile(selectedFile, targetFile);
-
-                // 设置头像路径（相对路径）
-                selectedAvatarPath = Constant.USER_CUSTOM_AVATAR_PATH + uniqueFileName;
+                selectedAvatarPath = selectedFile.getAbsolutePath();
                 updatePreview(selectedAvatarPath);
-
-                JOptionPane.showMessageDialog(this,
-                        "头像上传成功！",
-                        "成功",
-                        JOptionPane.INFORMATION_MESSAGE);
-
             } catch (Exception e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this,
-                        "头像上传失败：" + e.getMessage(),
-                        "上传失败",
+                        "头像选择失败：" + e.getLocalizedMessage(),
+                        "头像选择失败",
                         JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -318,7 +288,7 @@ public class AvatarSelector extends JDialog {
             ServiceResponse<?> response = AvatarService.getInstance().updateAvatarToServer(selectedAvatarPath);
             if (!response.isSuccess()) {
                 JOptionPane.showMessageDialog(this,
-                        "头像上传失败:" + response.getMessage(),
+                        "头像上传失败: " + response.getMessage(),
                         "头像更新失败",
                         JOptionPane.ERROR_MESSAGE);
                 return;
@@ -331,6 +301,8 @@ public class AvatarSelector extends JDialog {
                     "头像更新成功",
                     "更新成功",
                     JOptionPane.INFORMATION_MESSAGE);
+            ClientMain.getCurrentUser().setAvatarPath(selectedAvatarPath);
+            updatePreview(selectedAvatarPath);
         } catch (Exception e) {
             System.err.println("发送头像更新失败: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
@@ -355,18 +327,4 @@ public class AvatarSelector extends JDialog {
         return selectedAvatarPath;
     }
 
-    /**
-     * 复制文件
-     */
-    private void copyFile(File source, File target) throws IOException {
-        try (FileInputStream fis = new FileInputStream(source);
-             FileOutputStream fos = new FileOutputStream(target)) {
-
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                fos.write(buffer, 0, bytesRead);
-            }
-        }
-    }
 }

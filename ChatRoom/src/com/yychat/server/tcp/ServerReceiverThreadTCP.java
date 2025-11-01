@@ -1,10 +1,13 @@
 package com.yychat.server.tcp;
 
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.MessageType;
 import com.yychat.common.model.SystemUser;
+import com.yychat.server.service.AvatarFileManager;
 import com.yychat.server.service.FileManager;
+import com.yychat.server.service.UserService;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -44,21 +47,23 @@ public class ServerReceiverThreadTCP implements Runnable {
                     handleMessage(message);
                 }
             }
-        } catch (EOFException | ClassNotFoundException e) {
-            System.out.println("TCP客户端断开: " + socket.getInetAddress());
-        } catch (IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
-        } finally {
-            closeConnection();
         }
     }
 
     private void handleMessage(Message message) {
-        System.out.println("从用户: " + message.getSender() + " 接收到TCP消息，");
+        System.out.println("从用户: " + message.getSender() + " 接收到TCP消息 :" + JSONUtil.toJsonStr(message));
         Message response;
         switch (message.getMessageType()) {
             case MessageType.TCP_FILE_UPLOAD:
                 response = fileManager.handelFileMessage(message);
+                break;
+            case MessageType.TCP_FILE_DOWNLOAD:
+                response = AvatarFileManager.handelUserAvatarDownload(message);
+                break;
+            case MessageType.TCP_ACK:
+                response = message.setSender(message.getReceiver()).setReceiver(message.getSender());
                 break;
             default:
                 System.out.println("非支持的消息类型: " + message.getMessageType() + " 已丢弃");
@@ -70,6 +75,10 @@ public class ServerReceiverThreadTCP implements Runnable {
                                 .set("success", false)
                                 .set("message", "非支持的消息类型: " + message.getMessageType()));
         }
+        if (message.isSyncMessage()) {
+            response.setSyncTaskId(message.getSyncTaskId());
+        }
+        System.out.println("向" + response.getReceiver() + "发送消息 " + JSONUtil.toJsonStr(response));
         sendResponse(response);
     }
 

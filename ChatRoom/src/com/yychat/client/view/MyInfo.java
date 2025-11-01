@@ -184,7 +184,7 @@ public class MyInfo extends JFrame {
     /**
      * 更新头像显示
      */
-    private void updateAvatar() {
+    public void updateAvatar() {
         try {
             User currentUser = ClientMain.getCurrentUser();
             avatarPath = currentUser.getAvatarPath();
@@ -203,7 +203,7 @@ public class MyInfo extends JFrame {
     /**
      * 更新用户信息显示
      */
-    private void updateUserInfo() {
+    public void updateUserInfo() {
         User currentUser = ClientMain.getCurrentUser();
         if (currentUser != null) {
             currentUser.setAvatarPath(avatarPath);

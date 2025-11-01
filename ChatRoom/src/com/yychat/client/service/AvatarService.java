@@ -3,14 +3,13 @@ package com.yychat.client.service;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
-import com.yychat.common.model.AttachmentType;
-import com.yychat.common.model.Message;
-import com.yychat.common.model.ServiceResponse;
-import com.yychat.common.model.User;
+import com.yychat.common.model.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.Optional;
+
 import static com.yychat.common.model.Constant.*;
 
 public class AvatarService {
@@ -24,7 +23,7 @@ public class AvatarService {
     public static final String USER_AVATAR_SUFFIX = "USER_AVATAR";
     public static final int AVATAR_SIZE = 40; // 头像显示大小
 
-    public ServiceResponse<?> updateAvatarToServer(String selectedAvatarPath){
+    public ServiceResponse<?> updateAvatarToServer(String selectedAvatarPath) {
         String username = ClientMain.getCurrentUserName();
         boolean isDefaultAvatar = selectedAvatarPath.contains(DEFAULT_AVATAR_PATH);
         File avatarfile = new File(selectedAvatarPath);
@@ -34,13 +33,16 @@ public class AvatarService {
         JSONObject json = new JSONObject();
         json.set("username", username);
         json.set("is_default", isDefaultAvatar);
-        if(isDefaultAvatar){
-            json.set("avatar_path", selectedAvatarPath);
-        }else{
-            message.setAttachment(FileUtil.readBytes(avatarfile),byte[].class, AttachmentType.IMAGE_AVATAR);
-        }
+        json.set("filename", selectedAvatarPath);
+        message.setAttachment(FileUtil.readBytes(avatarfile), byte[].class, AttachmentType.IMAGE_AVATAR);
         message.setJsonMessage(json);
-        //TODO waiting TCP connection impl
+        Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
+        if (!response.isPresent()) {
+            return ServiceResponse.error("服务器失联");
+        }
+        if (!response.get().getJson().getBool("success", false)) {
+            return ServiceResponse.error(response.get().getJson().getStr("message", "未知错误"));
+        }
         return ServiceResponse.success(null);
     }
 
@@ -51,18 +53,20 @@ public class AvatarService {
      * @return 用户头像，如果获取失败返回null
      */
     public ImageIcon loadUserAvatar(String userName) {
-        return loadUserAvatar(userName,null);
+        return loadUserAvatar(userName, null);
     }
+
     /**
      * 加载用户头像 - 本地优先，如果本地没有则从服务端获取
-     * @param userName 用户名
+     *
+     * @param userName   用户名
      * @param targetPath 指定路径
      * @return 用户头像，如果获取失败返回null
      */
-    public ImageIcon loadUserAvatar(String userName,String targetPath){
+    public ImageIcon loadUserAvatar(String userName, String targetPath) {
         try {
             // 1. 首先尝试从CurrentUser获取头像地址（如果是当前用户）
-            String avatarPath = targetPath== null ? getUserAvatarPath(userName) : targetPath;
+            String avatarPath = targetPath == null ? getUserAvatarPath(userName) : targetPath;
             if (avatarPath == null) {
                 System.out.println("用户 " + userName + " 头像路径为空，使用默认头像");
                 avatarPath = DEFAULT_AVATAR_PATH + DEFAULT_AVATAR; // 默认头像
@@ -117,13 +121,35 @@ public class AvatarService {
 
     /**
      * 从服务端加载头像 - 使用封装的同步请求方法
+     *
      * @param userName 用户名
      * @return 图标对象，如果加载失败返回null
      */
     private ImageIcon loadIconFromServer(String userName) {
         try {
             System.out.println("开始从服务端获取用户 " + userName + " 的头像...");
-            //TODO using TCP connection 获取头像文件
+            Message message = Message.builder()
+                    .setMessageType(Message.TCP_FILE_DOWNLOAD)
+                    .setSender(ClientMain.getCurrentUserName())
+                    .setReceiver(SystemUser.Server.getStr())
+                    .setJsonMessage(new JSONObject().set("username", userName));
+            Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
+            if (!response.isPresent()) {
+                System.out.println("服务端无法返回头像");
+                return null;
+            }
+            if (!response.get().getJson().getBool("success", false)) {
+                System.out.println("服务端无法返回头像" + response.get().getJson().getStr("message", "未知错误"));
+                return null;
+            }
+            String filePath = response.get().getJson().getStr("filename");
+            byte[] avatarData = response.get().getAttachment(byte[].class);
+            if (filePath != null) {
+                File avatarFile = new File(filePath);
+                FileUtil.touch(avatarFile);
+                FileUtil.writeBytes(avatarData, avatarFile);
+                return new ImageIcon(avatarData);
+            }
             return null;
         } catch (Exception e) {
             System.err.println("从服务端加载用户 " + userName + " 头像时发生错误: " + e.getMessage());
@@ -168,7 +194,7 @@ public class AvatarService {
         // 5秒超时
         Message response = ClientMain.getUDPConnection().sendMessageToServerSync(message);
         if (response == null || !response.isJsonMessage()
-                || response.getJson().getStr("avatarPath",null) == null) {
+                || response.getJson().getStr("avatarPath", null) == null) {
             System.out.println("无法获取用户头像地址");
             return null;
         }
