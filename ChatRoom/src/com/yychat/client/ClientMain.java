@@ -4,7 +4,10 @@ import com.yychat.client.tcp.TCPClient;
 import com.yychat.client.udp.UDPClientConnection;
 import com.yychat.client.view.ClientLogin;
 import com.yychat.client.view.FriendList;
+import com.yychat.client.view.MyInfo;
+import com.yychat.client.service.UserService;
 import com.yychat.common.model.User;
+import com.yychat.common.model.ServiceResponse;
 
 import javax.swing.*;
 import java.util.concurrent.ExecutorService;
@@ -50,6 +53,16 @@ public class ClientMain {
         return tcpClient;
     }
 
+    /**
+     * 执行快速登录操作
+     * @param username 用户名
+     * @param password 密码
+     */
+    private static void performQuickLogin(String username, String password) {
+        LoginWindow = new ClientLogin(false);
+        LoginWindow.login(username, password);
+    }
+
     public static void main(String[] args) {
         System.out.println("初始化客户端中");
         System.out.println("建立UDP连接中");
@@ -65,8 +78,19 @@ public class ClientMain {
         System.out.println("正在启动TCP服务");
         tcpClient = new TCPClient();
         tcpClient.connect();
-        // 启动登录界面
-        System.out.println("启动登录界面");
-        SwingUtilities.invokeLater(() -> LoginWindow = new ClientLogin());
+
+        // 检查命令行参数
+        if (args.length >= 2) {
+            String username = args[0];
+            String password = args[1];
+            System.out.println("检测到命令行参数，执行快速登录...");
+            System.out.println("用户名: " + username);
+            // 在Swing事件线程中执行快速登录
+            SwingUtilities.invokeLater(() -> performQuickLogin(username, password));
+        } else {
+            // 启动登录界面
+            System.out.println("启动登录界面");
+            SwingUtilities.invokeLater(() -> LoginWindow = new ClientLogin(true));
+        }
     }
 }

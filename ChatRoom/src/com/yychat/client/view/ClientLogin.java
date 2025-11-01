@@ -27,7 +27,7 @@ public class ClientLogin extends JFrame {
 
     protected FriendList friendListWindow;
 
-    public ClientLogin() {
+    public ClientLogin(boolean showWindow) {
         initBasicUI();
         initListener();
 
@@ -35,7 +35,7 @@ public class ClientLogin extends JFrame {
         this.setLocationRelativeTo(null);
         this.setSize(400, 300);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setVisible(true);
+        this.setVisible(showWindow);
     }
 
     public void initBasicUI() {
@@ -101,30 +101,9 @@ public class ClientLogin extends JFrame {
     public void initListener() {
         // 登录按钮事件
         loginButton.addActionListener(event -> {
-            UserService userService = UserService.getInstance();
             String name = yyCodeTextField.getText();
             String password = new String(yyCodePasswordField.getPassword());
-            ServiceResponse<?> response = userService.loginByUserName(name, password);
-            if (!response.isSuccess()) {
-                JOptionPane.showMessageDialog(this, response.getMessage());
-                return;
-            }
-            // 创建好友列表窗口
-            friendListWindow = new FriendList();
-
-            //请求好友列表
-            userService.requestFriends();
-            // 请求在线好友
-            userService.requestOnlineFriends();
-            //请求陌生人
-            userService.requestUnknownFriends();
-            // 通知服务器有新用户上线
-            userService.broadcastNewFriendOnline();
-
-            // 创建并显示用户信息窗口
-            MyInfo myInfo = new MyInfo(friendListWindow);
-            myInfo.setVisible(true);
-
+            login(name, password);
             // 关闭登录窗口
             this.dispose();
         });
@@ -149,4 +128,29 @@ public class ClientLogin extends JFrame {
     public FriendList getFriendList() {
         return friendListWindow;
     }
+
+    public void login(String name, String password) {
+        UserService userService = UserService.getInstance();
+        ServiceResponse<?> response = userService.loginByUserName(name, password);
+        if (!response.isSuccess()) {
+            JOptionPane.showMessageDialog(this, response.getMessage());
+            return;
+        }
+        // 创建好友列表窗口
+        friendListWindow = new FriendList();
+
+        //请求好友列表
+        userService.requestFriends();
+        // 请求在线好友
+        userService.requestOnlineFriends();
+        //请求陌生人
+        userService.requestUnknownFriends();
+        // 通知服务器有新用户上线
+        userService.broadcastNewFriendOnline();
+
+        // 创建并显示用户信息窗口
+        MyInfo myInfo = new MyInfo(friendListWindow);
+        myInfo.setVisible(true);
+    }
+
 }
