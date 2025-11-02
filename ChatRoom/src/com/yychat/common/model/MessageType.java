@@ -17,8 +17,7 @@ public interface MessageType {
     // ================================
     // 群组管理消息类型
     // ================================
-    String GROUP_JOIN_REQUEST = "22";       // 加入群组请求
-    String GROUP_JOIN_RESPONSE = "23";      // 加入群组响应
+    String GROUP_JOIN = "22";       // 加入群组
     String GROUP_LEAVE_REQUEST = "24";      // 退出群组请求
     String GROUP_LEAVE_RESPONSE = "25";     // 退出群组响应
     String GROUP_INFO_UPDATE = "26";        // 群组信息更新

@@ -157,40 +157,78 @@ public class GroupListPanel extends JPanel {
      * 添加群组到列表
      */
     private void addGroupToList(Group group) {
+        // 群组项主面板 - 使用更现代的布局
         JPanel groupItemPanel = new JPanel(new BorderLayout());
-        groupItemPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        groupItemPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 12, 8, 12),  // 外边距
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230))  // 底部分割线
+        ));
         groupItemPanel.setBackground(Color.WHITE);
-        groupItemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
-        groupItemPanel.setMinimumSize(new Dimension(0, 60));
-        groupItemPanel.setPreferredSize(new Dimension(0, 60));
+        groupItemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
+        groupItemPanel.setMinimumSize(new Dimension(0, 75));
+        groupItemPanel.setPreferredSize(new Dimension(0, 75));
 
-        // 群组头像
+        // 群组头像容器 - 使用圆形头像和阴影效果
+        JPanel avatarContainer = new JPanel(new GridBagLayout());
+        avatarContainer.setBackground(Color.WHITE);
+        avatarContainer.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));  // 头像右侧间距
+
         JLabel avatarLabel = new JLabel();
-        avatarLabel.setPreferredSize(new Dimension(40, 40));
-        avatarLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        avatarLabel.setPreferredSize(new Dimension(48, 48));
+        avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        avatarLabel.setVerticalAlignment(SwingConstants.CENTER);
+
+        // 创建头像背景 - 圆形背景
+        JPanel avatarBackground = new JPanel(new GridBagLayout());
+        avatarBackground.setPreferredSize(new Dimension(48, 48));
+        avatarBackground.setBackground(new Color(100, 149, 237));  // 群组头像背景色
+        avatarBackground.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        avatarBackground.add(avatarLabel);
+
+        avatarContainer.add(avatarBackground);
         loadGroupAvatar(avatarLabel, group);
 
-        // 群组信息面板
-        JPanel infoPanel = new JPanel();
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        // 群组信息面板 - 改进布局和样式
+        JPanel infoPanel = new JPanel(new GridBagLayout());
         infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
 
-        // 群组名称
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(2, 0, 2, 0);
+
+        // 群组名称 - 更大更突出
         JLabel nameLabel = new JLabel(group.getGroupName());
-        nameLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        nameLabel.setFont(new Font("微软雅黑", Font.BOLD, 15));
+        nameLabel.setForeground(new Color(33, 37, 41));  // 深灰色
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
 
-        // 群组信息
-        JLabel infoLabel = new JLabel("成员: " + group.getMemberCount() + " 人");
-        infoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        infoLabel.setForeground(Color.GRAY);
-        infoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        infoPanel.add(nameLabel, gbc);
 
-        infoPanel.add(nameLabel);
-        infoPanel.add(infoLabel);
+        // 群组统计信息 - 包含成员数量和在线状态
+        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        statsPanel.setBackground(Color.WHITE);
+
+        // 成员数量标签
+        JLabel memberLabel = new JLabel(group.getMemberCount() + " 人");
+        memberLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        memberLabel.setForeground(new Color(108, 117, 125));
+
+        statsPanel.add(memberLabel);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        infoPanel.add(statsPanel, gbc);
 
         // 添加到群组项面板
-        groupItemPanel.add(avatarLabel, BorderLayout.WEST);
+        groupItemPanel.add(avatarContainer, BorderLayout.WEST);
         groupItemPanel.add(infoPanel, BorderLayout.CENTER);
 
         // 创建群组标签
@@ -198,14 +236,14 @@ public class GroupListPanel extends JPanel {
         groupLabel.setLayout(new BorderLayout());
         groupLabel.add(groupItemPanel, BorderLayout.CENTER);
 
-        // 设置标签属性
-        groupLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
-        groupLabel.setMinimumSize(new Dimension(0, 70));
-        groupLabel.setPreferredSize(new Dimension(0, 70));
+        // 设置标签属性 - 匹配新的面板高度
+        groupLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
+        groupLabel.setMinimumSize(new Dimension(0, 75));
+        groupLabel.setPreferredSize(new Dimension(0, 75));
         groupLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         groupLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // 添加鼠标事件
+        // 添加鼠标事件 - 改进的交互效果
         groupLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -218,12 +256,25 @@ public class GroupListPanel extends JPanel {
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                groupItemPanel.setBackground(new Color(240, 248, 255)); // 浅蓝色背景
+                // 更现代的悬停效果
+                groupItemPanel.setBackground(new Color(248, 249, 250)); // 浅灰背景
+                groupItemPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createEmptyBorder(8, 12, 8, 12),  // 保持相同边距
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0, 123, 255))  // 顶部蓝色边框
+                ));
+                // 头像背景色变化
+                avatarBackground.setBackground(new Color(70, 130, 180)); // 悬停时头像背景变深
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
+                // 恢复原始状态
                 groupItemPanel.setBackground(Color.WHITE);
+                groupItemPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createEmptyBorder(8, 12, 8, 12),
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230))  // 恢复灰色分割线
+                ));
+                avatarBackground.setBackground(new Color(100, 149, 237)); // 恢复原始头像背景
             }
         });
 
@@ -235,16 +286,31 @@ public class GroupListPanel extends JPanel {
     }
 
     /**
-     * 加载群组头像
+     * 加载群组头像 - 优化为圆形头像显示
      */
     private void loadGroupAvatar(JLabel avatarLabel, Group group) {
         try {
-            avatarLabel.setIcon(AvatarService.getInstance().loadGroupAvatar(group.getGroupName(),group.getGroupAvatarPath()));
+            ImageIcon avatarIcon = AvatarService.getInstance().loadGroupAvatar(group.getGroupName(), group.getGroupAvatarPath());
+            if (avatarIcon != null) {
+                // 将头像缩放为44x44以适应48x48的容器，留出2像素边距
+                Image scaledImage = avatarIcon.getImage().getScaledInstance(44, 44, Image.SCALE_SMOOTH);
+                avatarLabel.setIcon(new ImageIcon(scaledImage));
+                avatarLabel.setText("");  // 清除文字
+            } else {
+                // 如果没有头像，显示默认群组标识
+                avatarLabel.setText("群");
+                avatarLabel.setFont(new Font("微软雅黑", Font.BOLD, 18));
+                avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                avatarLabel.setVerticalAlignment(SwingConstants.CENTER);
+                avatarLabel.setForeground(Color.WHITE);
+            }
         } catch (Exception e) {
             System.err.println("加载群组头像失败: " + e.getMessage());
             avatarLabel.setText("群");
+            avatarLabel.setFont(new Font("微软雅黑", Font.BOLD, 18));
             avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            avatarLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+            avatarLabel.setVerticalAlignment(SwingConstants.CENTER);
+            avatarLabel.setForeground(Color.WHITE);
         }
     }
 
@@ -426,36 +492,227 @@ public class GroupListPanel extends JPanel {
     }
 
     /**
-     * 显示搜索结果
+     * 显示搜索结果 - 复用群组列表布局，并添加右键功能
      */
     private void showSearchResults(List<Group> groups) {
-        StringBuilder resultText = new StringBuilder("搜索结果:\n\n");
+        // 创建搜索结果对话框
+        JDialog resultDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "搜索结果", true);
+        resultDialog.setSize(600, 400);
+        resultDialog.setLocationRelativeTo(this);
+        resultDialog.setLayout(new BorderLayout());
+
+        // 创建标题面板
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBorder(new EmptyBorder(10, 15, 5, 15));
+        JLabel titleLabel = new JLabel("搜索结果 (" + groups.size() + " 个群组)");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        titleLabel.setForeground(new Color(33, 37, 41));
+        titlePanel.add(titleLabel);
+
+        // 创建搜索结果列表面板（复用原有布局）
+        JPanel searchListPanel = new JPanel();
+        searchListPanel.setLayout(new BoxLayout(searchListPanel, BoxLayout.Y_AXIS));
+        searchListPanel.setBorder(new EmptyBorder(0, 10, 10, 10));
+        searchListPanel.setBackground(Color.WHITE);
+
+        // 添加搜索结果项
         for (Group group : groups) {
-            resultText.append("群组名称: ").append(group.getGroupName())
-                    .append(" (ID: ").append(group.getGroupId())
-                    .append(", 成员: ").append(group.getMemberCount()).append("人)\n");
+            JPanel groupItemPanel = createSearchResultItem(group, resultDialog);
+            searchListPanel.add(groupItemPanel);
+            searchListPanel.add(Box.createVerticalStrut(5)); // 间距
         }
 
-        // 创建结果对话框
-        JDialog resultDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "搜索结果", true);
-        resultDialog.setSize(500, 300);
-        resultDialog.setLocationRelativeTo(this);
+        // 如果没有搜索结果，显示提示信息
+        if (groups.isEmpty()) {
+            JLabel emptyLabel = new JLabel("未找到相关群组", SwingConstants.CENTER);
+            emptyLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+            emptyLabel.setForeground(Color.GRAY);
+            emptyLabel.setPreferredSize(new Dimension(0, 100));
+            searchListPanel.add(emptyLabel);
+        }
 
-        JTextArea resultArea = new JTextArea(resultText.toString());
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-
-        JScrollPane scrollPane = new JScrollPane(resultArea);
-        resultDialog.add(scrollPane, BorderLayout.CENTER);
+        // 添加滚动面板
+        JScrollPane scrollPane = new JScrollPane(searchListPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         // 按钮面板
         JPanel buttonPanel = new JPanel();
+        buttonPanel.setBorder(new EmptyBorder(10, 15, 15, 15));
         JButton closeButton = new JButton("关闭");
+        closeButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         closeButton.addActionListener(e -> resultDialog.dispose());
         buttonPanel.add(closeButton);
 
+        // 添加到对话框
+        resultDialog.add(titlePanel, BorderLayout.NORTH);
+        resultDialog.add(scrollPane, BorderLayout.CENTER);
         resultDialog.add(buttonPanel, BorderLayout.SOUTH);
+
         resultDialog.setVisible(true);
+    }
+
+    /**
+     * 创建搜索结果项 - 复用群组列表项的布局样式
+     */
+    private JPanel createSearchResultItem(Group group, JDialog parentDialog) {
+        // 主面板 - 复用原有样式
+        JPanel groupItemPanel = new JPanel(new BorderLayout());
+        groupItemPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 12, 8, 12),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230))
+        ));
+        groupItemPanel.setBackground(Color.WHITE);
+        groupItemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
+        groupItemPanel.setMinimumSize(new Dimension(0, 75));
+        groupItemPanel.setPreferredSize(new Dimension(0, 75));
+
+        // 头像容器 - 复用原有样式
+        JPanel avatarContainer = new JPanel(new GridBagLayout());
+        avatarContainer.setBackground(Color.WHITE);
+        avatarContainer.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
+
+        JLabel avatarLabel = new JLabel();
+        avatarLabel.setPreferredSize(new Dimension(48, 48));
+        avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        avatarLabel.setVerticalAlignment(SwingConstants.CENTER);
+
+        JPanel avatarBackground = new JPanel(new GridBagLayout());
+        avatarBackground.setPreferredSize(new Dimension(48, 48));
+        avatarBackground.setBackground(new Color(100, 149, 237));
+        avatarBackground.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        avatarBackground.add(avatarLabel);
+
+        avatarContainer.add(avatarBackground);
+        loadGroupAvatar(avatarLabel, group);
+
+        // 信息面板
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(2, 0, 2, 0);
+
+        // 群组名称
+        JLabel nameLabel = new JLabel(group.getGroupName());
+        nameLabel.setFont(new Font("微软雅黑", Font.BOLD, 15));
+        nameLabel.setForeground(new Color(33, 37, 41));
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        infoPanel.add(nameLabel, gbc);
+
+        // 统计信息面板
+        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        statsPanel.setBackground(Color.WHITE);
+
+        JLabel memberLabel = new JLabel("👥 " + group.getMemberCount() + " 人");
+        memberLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        memberLabel.setForeground(new Color(108, 117, 125));
+
+        JLabel idLabel = new JLabel("ID: " + group.getGroupId());
+        idLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        idLabel.setForeground(new Color(108, 117, 125));
+
+        statsPanel.add(memberLabel);
+        statsPanel.add(idLabel);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        infoPanel.add(statsPanel, gbc);
+
+        // 添加到主面板
+        groupItemPanel.add(avatarContainer, BorderLayout.WEST);
+        groupItemPanel.add(infoPanel, BorderLayout.CENTER);
+
+        // 添加悬停效果
+        groupItemPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                groupItemPanel.setBackground(new Color(248, 249, 250));
+                avatarBackground.setBackground(new Color(70, 130, 180));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                groupItemPanel.setBackground(Color.WHITE);
+                avatarBackground.setBackground(new Color(100, 149, 237));
+            }
+        });
+
+        // 添加右键菜单
+        groupItemPanel.setComponentPopupMenu(createGroupContextMenu(group, parentDialog));
+
+        return groupItemPanel;
+    }
+
+    /**
+     * 创建群组右键菜单
+     */
+    private JPopupMenu createGroupContextMenu(Group group, JDialog parentDialog) {
+        JPopupMenu contextMenu = new JPopupMenu();
+
+        // 添加群组菜单项
+        JMenuItem addGroupItem = new JMenuItem("加入群组");
+        addGroupItem.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        addGroupItem.addActionListener(e -> joinGroup(group, parentDialog));
+
+        // 查看群组信息菜单项
+        JMenuItem infoItem = new JMenuItem("查看群组信息");
+        infoItem.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        infoItem.addActionListener(e -> showGroupInfo(group));
+
+        contextMenu.add(addGroupItem);
+        contextMenu.addSeparator();
+        contextMenu.add(infoItem);
+
+        return contextMenu;
+    }
+
+    /**
+     * 加入群组
+     */
+    private void joinGroup(Group group, JDialog parentDialog) {
+        int result = JOptionPane.showConfirmDialog(parentDialog,
+                "确定要加入群组 '" + group.getGroupName() + "' 吗？",
+                "加入群组确认",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (result == JOptionPane.YES_OPTION) {
+            try {
+                ServiceResponse<Group> response = groupService.joinGroup(group.getGroupId());
+                SwingUtilities.invokeLater(() -> {
+                    if (response.isSuccess()) {
+                        JOptionPane.showMessageDialog(parentDialog,
+                                "成功加入群组 '" + group.getGroupName() + "'！",
+                                "成功",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        parentDialog.dispose();
+                        // 刷新群组列表
+                        loadUserGroups();
+                    } else {
+                        JOptionPane.showMessageDialog(parentDialog,
+                                "加入群组失败: " + response.getMessage(),
+                                "错误",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(parentDialog,
+                        "加入群组时发生错误: " + ex.getMessage(),
+                        "错误",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     /**

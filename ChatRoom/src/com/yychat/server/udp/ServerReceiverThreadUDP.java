@@ -3,7 +3,9 @@ package com.yychat.server.udp;
 import cn.hutool.json.JSONUtil;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.MessageType;
+import com.yychat.server.service.GroupService;
 import com.yychat.server.service.UserService;
+import com.yychat.server.udp.handler.GroupServiceHandler;
 import com.yychat.server.udp.handler.UserServiceHandler;
 import com.yychat.server.util.DBUtil;
 
@@ -20,8 +22,9 @@ public class ServerReceiverThreadUDP implements Runnable {
     private InetSocketAddress clientAddress;
     private volatile boolean isRunning = true;
     private final YYChatUDPServer serverThread;
-    private UserService userService;
-    private UserServiceHandler userServiceHandler;
+    private final UserService userService;
+    private final UserServiceHandler userServiceHandler;
+    private final GroupServiceHandler groupServiceHandler;
 
     // 重载构造函数，用于直接处理接收到的数据包
     public ServerReceiverThreadUDP(DatagramPacket packet, YYChatUDPServer serverThread) {
@@ -29,6 +32,7 @@ public class ServerReceiverThreadUDP implements Runnable {
         this.serverThread = serverThread;
         userService = new UserService(this.clientAddress);
         userServiceHandler = new UserServiceHandler(userService, clientAddress,this);
+        groupServiceHandler = new GroupServiceHandler(GroupService.getInstance(),this.clientAddress,this);
         try {
             // 处理接收到的数据包
             processReceivedPacket(packet);
@@ -99,6 +103,39 @@ public class ServerReceiverThreadUDP implements Runnable {
                     break;
                 case MessageType.REQUEST_AVATAR_PATH:
                     userServiceHandler.handleRequestAvatar(message);
+                    break;
+                case MessageType.GROUP_CHAT_MESSAGE:
+                    groupServiceHandler.handleGroupChatMessage(message);
+                    break;
+                case MessageType.GROUP_JOIN:
+                    groupServiceHandler.handleJoinGroupRequest(message);
+                    break;
+                case MessageType.GROUP_LEAVE_REQUEST:
+                    groupServiceHandler.handleLeaveGroupRequest(message);
+                    break;
+                case MessageType.GROUP_INFO_UPDATE:
+                    groupServiceHandler.handleUpdateGroupInfoRequest(message);
+                    break;
+                case MessageType.GROUP_DELETE_REQUEST:
+                    groupServiceHandler.handleDeleteGroupRequest(message);
+                    break;
+                case MessageType.GROUP_ADD_MEMBER:
+                    groupServiceHandler.handleAddMemberRequest(message);
+                    break;
+                case MessageType.GROUP_REMOVE_MEMBER:
+                    groupServiceHandler.handleRemoveMemberRequest(message);
+                    break;
+                case MessageType.GROUP_TRANSFER_OWNER:
+                    groupServiceHandler.handleTransferOwnerRequest(message);
+                    break;
+                case MessageType.GROUP_MEMBERS_REQUEST:
+                    groupServiceHandler.handleGroupMembersRequest(message);
+                    break;
+                case MessageType.USER_GROUPS_REQUEST:
+                    groupServiceHandler.handleUserGroupsRequest(message);
+                    break;
+                case MessageType.GROUP_SEARCH_REQUEST:
+                    groupServiceHandler.handleGroupSearchRequest(message);
                     break;
                 default:
                     System.out.println("未处理的消息类型: " + message.getMessageType());

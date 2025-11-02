@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.yychat.client.udp.handler.ChatMessageHandler;
 import com.yychat.client.udp.handler.UserServiceHandler;
+import com.yychat.client.udp.handler.GroupServiceHandler;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.MessageType;
 
@@ -94,6 +95,43 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.REQUEST_UNK_USER_LIST:
                         UserServiceHandler.handelUnknownFriendsResponse(message);
                         break;
+                    case MessageType.GROUP_CHAT_MESSAGE:
+                        GroupServiceHandler.handleGroupChatMessage(message);
+                        break;
+                    case MessageType.GROUP_CHAT_MESSAGE_RESPONSE:
+                        GroupServiceHandler.handleGroupChatMessageResponse(message);
+                        break;
+                    case MessageType.GROUP_JOIN:
+                        GroupServiceHandler.handleJoinGroupResponse(message);
+                        break;
+                    case MessageType.GROUP_LEAVE_RESPONSE:
+                        GroupServiceHandler.handleLeaveGroupResponse(message);
+                        break;
+                    case MessageType.GROUP_INFO_UPDATE_RESPONSE:
+                        GroupServiceHandler.handleUpdateGroupInfoResponse(message);
+                        break;
+                    case MessageType.GROUP_DELETE_RESPONSE:
+                        GroupServiceHandler.handleDeleteGroupResponse(message);
+                        break;
+                    case MessageType.GROUP_ADD_MEMBER_RESPONSE:
+                        GroupServiceHandler.handleAddMemberResponse(message);
+                        break;
+                    case MessageType.GROUP_REMOVE_MEMBER_RESPONSE:
+                        GroupServiceHandler.handleRemoveMemberResponse(message);
+                        break;
+                    case MessageType.GROUP_TRANSFER_OWNER_RESPONSE:
+                        GroupServiceHandler.handleTransferOwnerResponse(message);
+                        break;
+                    case MessageType.GROUP_MEMBERS_RESPONSE:
+                        GroupServiceHandler.handleGroupMembersResponse(message);
+                        break;
+                    case MessageType.USER_GROUPS_RESPONSE:
+                        GroupServiceHandler.handleUserGroupsResponse(message);
+                        break;
+                    case MessageType.GROUP_SEARCH_RESPONSE:
+                        GroupServiceHandler.handleGroupSearchResponse(message);
+                        break;
+
                     default:
                         System.out.println("未处理的消息类型: " + message.getMessageType());
                         break;
