@@ -1,7 +1,8 @@
 package com.yychat.client.view;
 
 
-import com.yychat.client.view.friendlist.FriendList;
+import com.yychat.client.ClientMain;
+import com.yychat.client.view.friendlist.MainWindow;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
 
@@ -26,9 +27,9 @@ public class ClientLogin extends JFrame {
     protected JButton registerButton;
     protected JButton cancelButton;
 
-    protected FriendList friendListWindow;
+    protected MainWindow mainWindowWindow;
 
-    public ClientLogin(boolean showWindow) {
+    public ClientLogin() {
         initBasicUI();
         initListener();
 
@@ -36,7 +37,7 @@ public class ClientLogin extends JFrame {
         this.setLocationRelativeTo(null);
         this.setSize(400, 300);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setVisible(showWindow);
+        this.setVisible(true);
     }
 
     public void initBasicUI() {
@@ -104,9 +105,12 @@ public class ClientLogin extends JFrame {
         loginButton.addActionListener(event -> {
             String name = yyCodeTextField.getText();
             String password = new String(yyCodePasswordField.getPassword());
-            login(name, password);
-            // 关闭登录窗口
-            this.dispose();
+            MainWindow mainWindow = ClientMain.login(name, password, this);
+            if (mainWindow != null) {
+                ClientMain.setMainWindow(mainWindow);
+                // 关闭登录窗口
+                this.dispose();
+            }
         });
 
         // 注册按钮事件
@@ -125,33 +129,4 @@ public class ClientLogin extends JFrame {
             System.exit(0);
         });
     }
-
-    public FriendList getFriendList() {
-        return friendListWindow;
-    }
-
-    public void login(String name, String password) {
-        UserService userService = UserService.getInstance();
-        ServiceResponse<?> response = userService.loginByUserName(name, password);
-        if (!response.isSuccess()) {
-            JOptionPane.showMessageDialog(this, response.getMessage());
-            return;
-        }
-        // 创建好友列表窗口
-        friendListWindow = new FriendList();
-
-        //请求好友列表
-        userService.requestFriends();
-        // 请求在线好友
-        userService.requestOnlineFriends();
-        //请求陌生人
-        userService.requestUnknownFriends();
-        // 通知服务器有新用户上线
-        userService.broadcastNewFriendOnline();
-
-        // 创建并显示用户信息窗口
-//        MyInfo myInfo = new MyInfo(friendListWindow);
-//        myInfo.setVisible(true);
-    }
-
 }

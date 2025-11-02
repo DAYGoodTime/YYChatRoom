@@ -2,7 +2,7 @@ package com.yychat.client.view;
 
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
-import com.yychat.client.view.friendlist.FriendList;
+import com.yychat.client.view.friendlist.MainWindow;
 import com.yychat.common.model.Constant;
 import com.yychat.common.model.User;
 
@@ -18,11 +18,11 @@ public class MyInfo extends JFrame {
     private JLabel avatarLabel;
     private JLabel userNameLabel;
     private JButton uploadAvatarButton;
-    private final FriendList friendList;
+    private final MainWindow mainWindow;
     protected JTextArea infoTextArea;
 
-    public MyInfo(FriendList friendList) {
-        this.friendList = friendList;
+    public MyInfo(MainWindow mainWindow) {
+        this.mainWindow = mainWindow;
         initializeComponents();
         layoutComponents();
         setupEventListeners();
@@ -210,8 +210,8 @@ public class MyInfo extends JFrame {
             currentUser.setAvatarPath(avatarPath);
         }
         // 如果有FriendList实例，更新其中的头像显示
-        if (friendList != null) {
-            friendList.updateFriendAvatar(ClientMain.getCurrentUserName(), avatarPath);
+        if (mainWindow != null) {
+            mainWindow.updateUserAvatar(ClientMain.getCurrentUserName(), avatarPath);
         }
         infoTextArea.setText("用户名: " + ClientMain.getCurrentUserName() + "\n" +
                 "状态: 在线\n" +

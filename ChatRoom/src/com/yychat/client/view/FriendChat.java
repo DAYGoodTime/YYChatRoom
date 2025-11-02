@@ -19,6 +19,7 @@ import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 
 public class FriendChat extends JFrame implements KeyListener {
@@ -152,7 +153,12 @@ public class FriendChat extends JFrame implements KeyListener {
         // 顶部：时间 + 发送者名称
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         headerPanel.setOpaque(false);
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        SimpleDateFormat sdf;
+        if(message.getTime().isBefore(LocalDate.now().atStartOfDay())){
+            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        }else {
+            sdf = new SimpleDateFormat("HH:mm:ss");
+        }
         String currentTime = sdf.format(new Date());
         // 时间标签（灰色）
         JLabel timeLabel = new JLabel("[" + currentTime + "]");

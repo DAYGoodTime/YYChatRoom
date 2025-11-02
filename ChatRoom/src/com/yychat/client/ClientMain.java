@@ -1,64 +1,31 @@
 package com.yychat.client;
 
+import com.yychat.client.service.UserService;
 import com.yychat.client.tcp.TCPClient;
 import com.yychat.client.udp.UDPClientConnection;
 import com.yychat.client.view.ClientLogin;
-import com.yychat.client.view.friendlist.FriendList;
+import com.yychat.client.view.friendlist.MainWindow;
+import com.yychat.common.model.ServiceResponse;
 import com.yychat.common.model.User;
 
-import javax.swing.*;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ClientMain {
+
     public static ExecutorService backgroundThreadPool = Executors.newFixedThreadPool(10);
 
     private static User currentUser;
 
-    public static User getCurrentUser() {
-        return currentUser;
-    }
-
-    public static String getCurrentUserName() {
-        return currentUser.getUserName();
-    }
-
-    public static void setCurrentUser(User currentUser) {
-        ClientMain.currentUser = currentUser;
-    }
-
-    private static ClientLogin LoginWindow;
-
-    public static ClientLogin getLoginWindow() {
-        return LoginWindow;
-    }
-
-    public static FriendList getFriendList() {
-        return getLoginWindow().getFriendList();
-    }
-
+    private static MainWindow mainWindow;
 
     private static UDPClientConnection udpConnection;
 
-    public static UDPClientConnection getUDPConnection() {
-        return udpConnection;
-    }
-
     private static TCPClient tcpClient;
-
-    public static TCPClient getTCPConnection() {
-        return tcpClient;
-    }
-
-    /**
-     * 执行快速登录操作
-     * @param username 用户名
-     * @param password 密码
-     */
-    private static void performQuickLogin(String username, String password) {
-        LoginWindow = new ClientLogin(false);
-        LoginWindow.login(username, password);
-    }
 
     public static void main(String[] args) {
         System.out.println("初始化客户端中");
@@ -74,8 +41,8 @@ public class ClientMain {
         // 初始化TCP服务
         System.out.println("正在启动TCP服务");
         tcpClient = new TCPClient();
-        if(!tcpClient.connect()){
-            JOptionPane.showMessageDialog(new JPanel(),"无法启动,请检查服务器连接","启动失败",JOptionPane.ERROR_MESSAGE);
+        if (!tcpClient.connect()) {
+            JOptionPane.showMessageDialog(new JPanel(), "无法启动,请检查服务器连接", "启动失败", JOptionPane.ERROR_MESSAGE);
             System.out.println("TCP启动失败，无法启动");
             System.exit(0);
         }
@@ -91,7 +58,78 @@ public class ClientMain {
         } else {
             // 启动登录界面
             System.out.println("启动登录界面");
-            SwingUtilities.invokeLater(() -> LoginWindow = new ClientLogin(true));
+            SwingUtilities.invokeLater(ClientLogin::new);
         }
+    }
+
+    /**
+     * 执行快速登录操作
+     *
+     * @param username 用户名
+     * @param password 密码
+     */
+    private static void performQuickLogin(String username, String password) {
+        mainWindow = ClientMain.login(username, password, null);
+        if (mainWindow == null) {
+            System.err.println("快速登录失败");
+            System.exit(-1);
+        }
+        System.out.println("快速登录成功");
+    }
+
+    public static MainWindow login(String name, String password, Component target) {
+        UserService userService = UserService.getInstance();
+        ServiceResponse<?> response = userService.loginByUserName(name, password);
+        if (!response.isSuccess()) {
+            if (target == null) {
+                System.out.println("登录失败:" + response.getMessage());
+            } else {
+                JOptionPane.showMessageDialog(target, response.getMessage());
+            }
+            return null;
+        }
+        // 创建主窗口
+        MainWindow window = new MainWindow();
+
+        //请求好友列表
+        userService.requestFriends();
+        // 请求在线好友
+        userService.requestOnlineFriends();
+        //请求陌生人
+        userService.requestUnknownFriends();
+        // 通知服务器有新用户上线
+        userService.broadcastNewFriendOnline();
+
+        return window;
+    }
+
+    //Getter
+    public static MainWindow getMainWindow() {
+        return mainWindow;
+    }
+
+    public static User getCurrentUser() {
+        return currentUser;
+    }
+
+    public static String getCurrentUserName() {
+        return currentUser.getUserName();
+    }
+
+    public static UDPClientConnection getUDPConnection() {
+        return udpConnection;
+    }
+
+    public static TCPClient getTCPConnection() {
+        return tcpClient;
+    }
+
+    //Setter
+    public static void setCurrentUser(User currentUser) {
+        ClientMain.currentUser = currentUser;
+    }
+
+    public static void setMainWindow(MainWindow mainWindow) {
+        ClientMain.mainWindow = mainWindow;
     }
 }
