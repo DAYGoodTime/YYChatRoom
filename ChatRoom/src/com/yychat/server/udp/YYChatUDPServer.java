@@ -11,6 +11,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -141,8 +142,15 @@ public class YYChatUDPServer implements Runnable {
         return userAddressMap;
     }
 
-    public void removeUser(String userName) {
-        userAddressMap.remove(userName);
-        //TODO 广播下线通知
+    /**
+     * 广播消息给所有人(除消息发送者自己)
+     */
+    public void broadcastMessage(Message message) {
+        Map<String, InetSocketAddress> map = getUserAddressMap();
+        InetSocketAddress self = map.get(message.getSender());
+        map.values().forEach(userAddress -> {
+            if(!userAddress.equals(self))
+                sendMessageToClient(userAddress,message,null);
+        });
     }
 }

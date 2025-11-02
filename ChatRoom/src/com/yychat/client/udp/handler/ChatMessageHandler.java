@@ -1,11 +1,10 @@
 package com.yychat.client.udp.handler;
 
 import com.yychat.client.ClientMain;
-import com.yychat.common.model.ChatMessageType;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
 import com.yychat.client.view.FriendChat;
-import com.yychat.client.view.FriendList;
+import com.yychat.client.view.friendlist.FriendList;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.User;
 

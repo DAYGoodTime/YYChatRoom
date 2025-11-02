@@ -82,7 +82,9 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.NEW_ONLINE_FRIEND:
                         UserServiceHandler.handleNewOnlineFriend(message);
                         break;
-
+                    case MessageType.EXIT:
+                        UserServiceHandler.handelFriendOffline(message);
+                        break;
                     case MessageType.USER_ADD_NEW_FRIEND:
                         UserServiceHandler.handleAddNewFriendResponse(message);
                         break;

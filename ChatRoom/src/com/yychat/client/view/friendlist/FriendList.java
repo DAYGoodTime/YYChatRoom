@@ -1,8 +1,10 @@
-package com.yychat.client.view;
+package com.yychat.client.view.friendlist;
 
 import cn.hutool.core.util.StrUtil;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
+import com.yychat.client.view.FriendChat;
+import com.yychat.client.view.MyInfo;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
 import com.yychat.client.util.ImageIconUtil;
@@ -12,14 +14,10 @@ import com.yychat.common.model.User;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseAdapter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,11 +31,8 @@ public class FriendList extends JFrame {
     protected JLabel[] friendLabel;
     protected JPanel friendListPanel;
     protected JPanel strangerListPanel;
-    // 旧的面板变量保留以兼容现有代码
-    protected JPanel friendPanel;
-    protected JPanel strangerPanel;
 
-    private final static HashMap<String, FriendChat> friendChatMap = new HashMap<String, FriendChat>();
+    private final static HashMap<String, FriendChat> friendChatMap = new HashMap<>();
 
     private CountDownLatch initializationLatch;
     private CountDownLatch friendListLatch;
@@ -76,7 +71,7 @@ public class FriendList extends JFrame {
     public FriendList() {
         initializationLatch = new CountDownLatch(1);
         friendListLatch = new CountDownLatch(1);
-        initializeNewComponents();
+        initializeComponents();
         initializeFrame();
         setFrameVisible();
 
@@ -87,16 +82,16 @@ public class FriendList extends JFrame {
     /**
      * 初始化所有组件
      */
-    private void initializeNewComponents() {
-        initializeNewPanels();
-        setupNewLayout();
+    private void initializeComponents() {
+        initializePanels();
+        setupLayout();
         setupButtonListeners();
     }
 
     /**
-     * 初始化新面板（新布局）
+     * 初始化新面板
      */
-    private void initializeNewPanels() {
+    private void initializePanels() {
         // 创建主面板使用BorderLayout
         setLayout(new BorderLayout());
 
@@ -242,16 +237,16 @@ public class FriendList extends JFrame {
     }
 
     /**
-     * 设置新布局
+     * 设置布局
      */
-    private void setupNewLayout() {
+    private void setupLayout() {
         // 默认显示好友列表
         showFriendContent();
     }
 
 
     /**
-     * 设置按钮监听器（新布局）
+     * 设置按钮监听器
      */
     private void setupButtonListeners() {
         // 设置导航按钮监听器
@@ -286,7 +281,7 @@ public class FriendList extends JFrame {
     }
 
     /**
-     * 创建好友鼠标监听器（支持右键菜单）
+     * 创建好友鼠标监听器
      */
     private MouseListener createFriendMouseListener() {
         User sender = ClientMain.getCurrentUser();
@@ -359,7 +354,7 @@ public class FriendList extends JFrame {
     }
 
     /**
-     * 创建陌生人鼠标监听器（支持右键菜单和双击添加）
+     * 创建陌生人鼠标监听器
      */
     private MouseListener createStrangerMouseListener() {
         final FriendList instance = this;
@@ -416,12 +411,7 @@ public class FriendList extends JFrame {
 
         // 添加为好友菜单项
         JMenuItem addFriendItem = new JMenuItem("添加为好友");
-        addFriendItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                addStrangerAsFriend(strangerName);
-            }
-        });
+        addFriendItem.addActionListener(actionEvent -> addStrangerAsFriend(strangerName));
 
         contextMenu.add(addFriendItem);
         contextMenu.show(e.getComponent(), e.getX(), e.getY());
@@ -435,16 +425,13 @@ public class FriendList extends JFrame {
 
         // 删除好友菜单项（仅注册事件，未实现）
         JMenuItem deleteItem = new JMenuItem("删除好友");
-        deleteItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                // TODO: 实现删除好友功能
-                System.out.println("删除好友功能待实现: " + friendName);
-                JOptionPane.showMessageDialog(FriendList.this,
-                    "删除好友功能待实现: " + friendName,
-                    "提示",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
+        deleteItem.addActionListener(actionEvent -> {
+            // TODO: 实现删除好友功能
+            System.out.println("删除好友功能待实现: " + friendName);
+            JOptionPane.showMessageDialog(FriendList.this,
+                "删除好友功能待实现: " + friendName,
+                "提示",
+                JOptionPane.INFORMATION_MESSAGE);
         });
 
         contextMenu.add(deleteItem);
@@ -603,22 +590,14 @@ public class FriendList extends JFrame {
         }
     }
 
-    public void activeNewOnlineFriendIcon(String s) {
+    public void changeFriendIconStatus(String friendName,boolean status) {
         if (waitingReady()) {
             // 检查组件是否已初始化
             if (friendListPanel == null) {
                 System.err.println("好友列表面板尚未初始化，跳过新好友激活");
                 return;
             }
-
-            JLabel[] friendLabel = getFriendLabel();
-            if (!s.isEmpty() && friendLabel != null) {
-                for (JLabel jLabel : friendLabel) {
-                    if (jLabel != null && jLabel.getText().equals(s)) {
-                        jLabel.setEnabled(true);
-                    }
-                }
-            }
+            Arrays.stream(getFriendLabel()).findFirst().ifPresent(label->label.setEnabled(status));
         }
     }
 

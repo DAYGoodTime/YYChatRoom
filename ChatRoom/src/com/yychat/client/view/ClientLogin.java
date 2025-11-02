@@ -1,6 +1,7 @@
 package com.yychat.client.view;
 
 
+import com.yychat.client.view.friendlist.FriendList;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
 

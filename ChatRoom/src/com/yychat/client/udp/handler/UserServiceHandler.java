@@ -3,7 +3,7 @@ package com.yychat.client.udp.handler;
 import cn.hutool.json.JSONArray;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.UserService;
-import com.yychat.client.view.FriendList;
+import com.yychat.client.view.friendlist.FriendList;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.User;
 
@@ -35,7 +35,7 @@ public class UserServiceHandler {
         FriendList friendList = ClientMain.getFriendList();
         if (friendList != null) {
             System.out.println("新好友上线通知: " + sender);
-            friendList.activeNewOnlineFriendIcon(sender);
+            friendList.changeFriendIconStatus(sender,true);
         }
     }
 
@@ -77,6 +77,15 @@ public class UserServiceHandler {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void handelFriendOffline(Message message) {
+        String sender = message.getSender();
+        FriendList friendList = ClientMain.getFriendList();
+        if (friendList != null) {
+            System.out.println("好友下线通知: " + sender);
+            friendList.changeFriendIconStatus(sender,false);
         }
     }
 }

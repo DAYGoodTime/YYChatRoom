@@ -1,6 +1,7 @@
 package com.yychat.client.tcp;
 
 import cn.hutool.json.JSONUtil;
+import com.yychat.client.ClientMain;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.MessageType;
 
@@ -230,7 +231,9 @@ public class TCPClient {
         heartbeatTask = heartbeatExecutor.scheduleWithFixedDelay(() -> {
             if (isConnected()) {
                 try {
-                    Message heartbeat = Message.builder().setMessageType(MessageType.TCP_HEARTBEAT);
+                    Message heartbeat = Message.builder()
+                            .setSender(ClientMain.getCurrentUserName())
+                            .setMessageType(MessageType.TCP_HEARTBEAT);
                     synchronized (oos) {
                         oos.writeObject(heartbeat);
                         oos.flush();

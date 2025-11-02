@@ -19,11 +19,12 @@ import java.net.SocketException;
  * TCP接收线程，用于处理单个客户端的文件传输连接
  */
 public class ServerReceiverThreadTCP implements Runnable {
-    private Socket socket;
+    private final Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
     private boolean running = true;
     private static final FileManager fileManager = FileManager.getInstance();
+    private boolean userExit = false;
 
     public ServerReceiverThreadTCP(Socket socket) {
         this.socket = socket;
@@ -45,7 +46,6 @@ public class ServerReceiverThreadTCP implements Runnable {
                     Object obj = ois.readObject();
                     if (obj instanceof Message) {
                         Message message = (Message) obj;
-                        // 异步处理消息，提高并发性能
                         new Thread(() -> handleMessage(message), "TCP-Message-Handler").start();
                     }
                 } catch (SocketException e) {
@@ -54,6 +54,7 @@ public class ServerReceiverThreadTCP implements Runnable {
                     }
                     break;
                 } catch (EOFException e) {
+                    userExit = true;
                     System.out.println("客户端正常断开连接");
                     break;
                 } catch (IOException e) {
@@ -66,7 +67,7 @@ public class ServerReceiverThreadTCP implements Runnable {
                 }
             }
         } finally {
-            if (running) {
+            if (running && !userExit) {
                 System.out.println("TCP连接线程意外结束，关闭连接");
             }
             closeConnection();

@@ -3,11 +3,8 @@ package com.yychat.client;
 import com.yychat.client.tcp.TCPClient;
 import com.yychat.client.udp.UDPClientConnection;
 import com.yychat.client.view.ClientLogin;
-import com.yychat.client.view.FriendList;
-import com.yychat.client.view.MyInfo;
-import com.yychat.client.service.UserService;
+import com.yychat.client.view.friendlist.FriendList;
 import com.yychat.common.model.User;
-import com.yychat.common.model.ServiceResponse;
 
 import javax.swing.*;
 import java.util.concurrent.ExecutorService;
