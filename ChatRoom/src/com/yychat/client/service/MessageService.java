@@ -22,6 +22,7 @@ public class MessageService {
             User receiver,
             String textContent
     ) {
+        ServiceResponse<Message> serviceResponse = new ServiceResponse<>(Message.builder());
         JSONObject json = new JSONObject();
         json.set("chat_type", ChatMessageType.UserChatPainText.getCode());
         json.set("content", textContent);
@@ -34,9 +35,9 @@ public class MessageService {
             ClientMain.getUDPConnection().sendChatMessage(message);
         } catch (Exception e) {
             e.printStackTrace();
-            return ServiceResponse.error(e.getLocalizedMessage());
+            return serviceResponse.error(e.getLocalizedMessage());
         }
-        return ServiceResponse.success(message);
+        return serviceResponse.success(message);
     }
 
     public ServiceResponse<Message> sendFileMessageToUser(
@@ -46,6 +47,7 @@ public class MessageService {
             byte[] fileContent,
             String fileName
     ) {
+        ServiceResponse<Message> serviceResponse = new ServiceResponse<>(Message.builder());
         JSONObject json = new JSONObject();
         json.set("chat_type", ChatMessageType.UserChatFile.getCode());
         json.set("content", textContent);
@@ -91,15 +93,15 @@ public class MessageService {
                     .setAttachment(fileContent, byte[].class, AttachmentType.MESSAGE_FILE);
             Optional<Message> fileUploadResponse = ClientMain.getTCPConnection().sendMessage(fileMessage);
             if (!fileUploadResponse.isPresent()) {
-                return ServiceResponse.error("无法上传文件");
+                return serviceResponse.error("无法上传文件");
             }
             //发送普通消息，附带附件需要的信息
             ClientMain.getUDPConnection().sendChatMessage(message);
         } catch (Exception e) {
             e.printStackTrace();
-            return ServiceResponse.error(e.getLocalizedMessage());
+            return serviceResponse.error(e.getLocalizedMessage());
         }
-        return ServiceResponse.success(message);
+        return serviceResponse.success(message);
 
     }
 
@@ -120,6 +122,7 @@ public class MessageService {
     }
 
     public ServiceResponse<byte[]> downloadFileFromServer(String md5){
+        ServiceResponse<byte[]> serviceResponse = new ServiceResponse<>(new byte[0]);
         Message message = Message.builder()
                 .setMessageType(MessageType.TCP_FILE_DOWNLOAD)
                 .setSender(ClientMain.getCurrentUserName())
@@ -128,8 +131,8 @@ public class MessageService {
                 .setAttachmentType(AttachmentType.MESSAGE_FILE);
         Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
         if(!response.isPresent()) {
-            return ServiceResponse.error("无法下载文件");
+            return serviceResponse.error("无法下载文件");
         }
-        return ServiceResponse.success(response.get().getAttachment(byte[].class));
+        return serviceResponse.success(response.get().getAttachment(byte[].class));
     }
 }

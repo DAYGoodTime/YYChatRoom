@@ -23,6 +23,7 @@ public class AvatarService {
     public static final int AVATAR_SIZE = 40; // 头像显示大小
 
     public ServiceResponse<?> updateAvatarToServer(String selectedAvatarPath) {
+        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
         String username = ClientMain.getCurrentUserName();
         boolean isDefaultAvatar = selectedAvatarPath.contains(DEFAULT_AVATAR_PATH);
         File avatarfile = new File(selectedAvatarPath);
@@ -38,22 +39,12 @@ public class AvatarService {
                 .setAttachment(FileUtil.readBytes(avatarfile), byte[].class, AttachmentType.IMAGE_AVATAR);
         Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
         if (!response.isPresent()) {
-            return ServiceResponse.error("服务器失联");
+            return serviceResponse.error("服务器失联");
         }
         if (!response.get().getJson().getBool("success", false)) {
-            return ServiceResponse.error(response.get().getJson().getStr("message", "未知错误"));
+            return serviceResponse.error(response.get().getJson().getStr("message", "未知错误"));
         }
-        return ServiceResponse.success(null);
-    }
-
-    /**
-     * 加载用户头像 - 本地优先，如果本地没有则从服务端获取
-     *
-     * @param userName 用户名
-     * @return 用户头像，如果获取失败返回null
-     */
-    public ImageIcon loadUserAvatar(String userName) {
-        return loadUserAvatar(userName, null);
+        return serviceResponse.success("头像更新成功");
     }
 
     /**
@@ -69,30 +60,69 @@ public class AvatarService {
             String avatarPath = targetPath == null ? getUserAvatarPath(userName) : targetPath;
             if (avatarPath == null) {
                 System.out.println("用户 " + userName + " 头像路径为空，使用默认头像");
-                avatarPath = DEFAULT_AVATAR_PATH + DEFAULT_AVATAR; // 默认头像
+                avatarPath = DEFAULT_AVATAR_FULL_PATH; // 默认头像
             }
             // 2. 尝试从本地加载头像
             ImageIcon icon = loadIconFromLocal(avatarPath);
             if (icon != null) {
-                System.out.println("成功从本地加载用户 " + userName + " 的头像: " + avatarPath);
+                System.out.println("成功从本地加载 " + userName + " 的头像: " + avatarPath);
                 return icon;
             }
             // 3. 本地没有，从服务端获取
             System.out.println("本地没有用户 " + userName + " 的头像，从服务端获取...");
-            icon = loadIconFromServer(userName);
+            icon = loadIconFromServer(userName,AvatarType.UserAvatar);
             if (icon != null) {
                 System.out.println("成功从服务端获取用户 " + userName + " 的头像");
                 return icon;
             }
             // 4. 服务端获取失败，返回默认头像
             System.out.println("无法获取用户 " + userName + " 的头像，使用默认头像");
-            return loadIconFromLocal(DEFAULT_AVATAR_PATH + DEFAULT_AVATAR);
+            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
 
         } catch (Exception e) {
             System.err.println("加载用户 " + userName + " 头像时发生错误: " + e.getMessage());
             e.printStackTrace();
             // 发生错误时返回默认头像
-            return loadIconFromLocal(DEFAULT_AVATAR_PATH + DEFAULT_AVATAR);
+            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
+        }
+    }
+
+    /**
+     * 加载用户头像 - 本地优先，如果本地没有则从服务端获取
+     *
+     * @param groupName  群组名称
+     * @param targetPath 指定路径
+     * @return 用户头像，如果获取失败返回null
+     */
+    public ImageIcon loadGroupAvatar(String groupName, String targetPath) {
+        try {
+            // 1. 首先尝试从CurrentUser获取头像地址（如果是当前用户）
+            if (targetPath == null) {
+                System.out.println("群 " + groupName + " 头像路径为空，使用默认头像");
+                targetPath = DEFAULT_AVATAR_FULL_PATH; // 默认头像
+            }
+            // 2. 尝试从本地加载头像
+            ImageIcon icon = loadIconFromLocal(targetPath);
+            if (icon != null) {
+                System.out.println("成功从本地加载群 " + groupName + " 的头像: " + targetPath);
+                return icon;
+            }
+            // 3. 本地没有，从服务端获取
+            System.out.println("本地没有群 " + groupName + " 的头像，从服务端获取...");
+            icon = loadIconFromServer(groupName,AvatarType.GroupAvatar);
+            if (icon != null) {
+                System.out.println("成功从服务端获取用户 " + groupName + " 的头像");
+                return icon;
+            }
+            // 4. 服务端获取失败，返回默认头像
+            System.out.println("无法获取群 " + groupName + " 的头像，使用默认头像");
+            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
+
+        } catch (Exception e) {
+            System.err.println("加载群 " + groupName + " 头像时发生错误: " + e.getMessage());
+            e.printStackTrace();
+            // 发生错误时返回默认头像
+            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
         }
     }
 
@@ -120,20 +150,28 @@ public class AvatarService {
     }
 
     /**
-     * 从服务端加载头像 - 使用封装的同步请求方法
+     * 从服务端加载头像
      *
-     * @param userName 用户名
+     * @param targetName 用户名或群名
      * @return 图标对象，如果加载失败返回null
      */
-    private ImageIcon loadIconFromServer(String userName) {
+    private ImageIcon loadIconFromServer(String targetName, AvatarType type) {
         try {
-            System.out.println("开始从服务端获取用户 " + userName + " 的头像...");
             Message message = Message.builder()
                     .setMessageType(Message.TCP_FILE_DOWNLOAD)
                     .setSender(ClientMain.getCurrentUserName())
-                    .setReceiver(SystemUser.Server.getStr())
-                    .setJsonMessage(new JSONObject().set("username", userName))
-                    .setAttachmentType(AttachmentType.IMAGE_AVATAR);
+                    .setReceiver(SystemUser.Server.getStr());
+            switch (type) {
+                case UserAvatar:
+                    message = message
+                            .setJsonMessage(new JSONObject().set("username", targetName))
+                            .setAttachmentType(AttachmentType.IMAGE_AVATAR);
+                case GroupAvatar:
+                    message = message
+                            .setJsonMessage(new JSONObject().set("group_name", targetName))
+                            .setAttachmentType(AttachmentType.GROUP_AVATAR);
+
+            }
             Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
             if (!response.isPresent()) {
                 System.out.println("服务端无法返回头像");
@@ -153,7 +191,8 @@ public class AvatarService {
             }
             return null;
         } catch (Exception e) {
-            System.err.println("从服务端加载用户 " + userName + " 头像时发生错误: " + e.getMessage());
+            String typeName = (type.equals(AvatarType.UserAvatar))?"用户":"群";
+            System.err.println("从服务端加载 " + typeName  + " 头像时发生错误: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -202,6 +241,11 @@ public class AvatarService {
         String avatarPath = response.getJson().getStr("avatarPath");
         System.out.println("成功从服务端获取用户 " + userName + " 的头像路径: " + avatarPath);
         return avatarPath;
+    }
+
+    public enum AvatarType {
+        UserAvatar,
+        GroupAvatar
     }
 
 }

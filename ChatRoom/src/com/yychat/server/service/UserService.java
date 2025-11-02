@@ -72,11 +72,12 @@ public class UserService {
 
 
     public ServiceResponse<User> queryUserInfoByUserName(String username) {
+        ServiceResponse<User> serviceResponse = new ServiceResponse<>(new User());
         User userInfo = DBUtil.getUserInfo(username);
         if (userInfo == null) {
-            return ServiceResponse.error("用户不存在");
+            return serviceResponse.error("用户不存在");
         }
-        return ServiceResponse.success(userInfo);
+        return serviceResponse.success(userInfo);
     }
 
 

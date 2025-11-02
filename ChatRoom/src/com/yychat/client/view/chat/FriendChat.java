@@ -1,4 +1,4 @@
-package com.yychat.client.view;
+package com.yychat.client.view.chat;
 
 
 import cn.hutool.core.codec.Base64;

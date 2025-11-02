@@ -1,7 +1,10 @@
 package com.yychat.server.udp;
 
 import cn.hutool.json.JSONUtil;
+import com.yychat.common.model.GroupMember;
 import com.yychat.common.model.Message;
+import com.yychat.common.model.MessageType;
+import com.yychat.server.util.DBUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -163,5 +166,30 @@ public class YYChatUDPServer implements Runnable {
                 .filter(entry-> users.contains(entry.getKey()))
                 .forEach(entry -> sendMessageToClient(entry.getValue(),message,null));
 
+    }
+    /**
+     * 广播群组消息给所有在线成员
+     */
+    public void broadcastGroupMessage(int groupId, Message message) {
+        try {
+            // 获取群组成员列表
+            List<GroupMember> members = DBUtil.getGroupMembers(groupId);
+            Map<String, InetSocketAddress> userAddressMap = getUserAddressMap();
+
+            // 发送给所有在线成员（除了发送者自己）
+            for (GroupMember member : members) {
+                String username = member.getUsername();
+                if (!username.equals(message.getSender()) && userAddressMap.containsKey(username)) {
+                    InetSocketAddress memberAddress = userAddressMap.get(username);
+                    Message groupMessage = Message.builder()
+                            .setMessageType(MessageType.GROUP_CHAT_MESSAGE)
+                            .setSender(message.getSender())
+                            .setContent(message.getContent());
+                    sendMessageToClient(memberAddress, groupMessage, null);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

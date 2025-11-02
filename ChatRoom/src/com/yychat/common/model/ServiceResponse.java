@@ -27,12 +27,16 @@ public class ServiceResponse<T> {
         return data;
     }
 
-    public static ServiceResponse error(String message) {
-        return new ServiceResponse(message);
-    }
+    public ServiceResponse<T> error(String message) {
+        this.success = false;
+        this.message = message;
+        return this;
+}
 
-    public static <T> ServiceResponse<T> success(T data) {
-        return new ServiceResponse<>(data);
+    public ServiceResponse<T> success(T data) {
+        this.success = true;
+        this.data = data;
+        return this;
     }
 
 

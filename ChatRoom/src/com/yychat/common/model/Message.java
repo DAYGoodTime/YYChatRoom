@@ -13,7 +13,7 @@ public class Message implements Serializable, MessageType {
     private String receiver;
     @Deprecated
     private String content;
-    private final LocalDateTime time;
+    private LocalDateTime time;
     private boolean isJsonMessage = false;
     private boolean isSyncMessage = false;
     private String syncTaskId;
@@ -90,6 +90,11 @@ public class Message implements Serializable, MessageType {
     public Message setJsonMessage(JSONObject json) {
         this.isJsonMessage = true;
         this.json = json;
+        return this;
+    }
+
+    public Message setTime(LocalDateTime time) {
+        this.time = time;
         return this;
     }
 

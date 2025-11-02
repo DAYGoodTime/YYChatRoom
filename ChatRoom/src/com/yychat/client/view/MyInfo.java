@@ -2,7 +2,6 @@ package com.yychat.client.view;
 
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
-import com.yychat.client.view.friendlist.MainWindow;
 import com.yychat.common.model.Constant;
 import com.yychat.common.model.User;
 

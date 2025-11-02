@@ -23,8 +23,9 @@ public class UserService {
      * 登录请求
      */
     public ServiceResponse<?> loginByUserName(String username, String password) {
+        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
         if (StrUtil.isEmpty(username) || StrUtil.isEmpty(password)) {
-            return ServiceResponse.error("用户名或密码为空");
+            return serviceResponse.error("用户名或密码为空");
         }
         UDPClientConnection conn = ClientMain.getUDPConnection();
         User temp = new User(username, password);
@@ -33,24 +34,25 @@ public class UserService {
                 .setSender(temp.getUserName())
                 .setJsonMessage(new JSONObject(temp));
         Message response = conn.sendMessageToServerSync(message);
-        if (response == null) return ServiceResponse.error("服务器失联!");
+        if (response == null) return serviceResponse.error("服务器失联!");
         if (!MessageType.USER_LOGIN_REQUEST.equals(response.getMessageType()) || !response.getJson().getBool("success", false)) {
-            return ServiceResponse.error(response.getJson().getStr("message", ""));
+            return serviceResponse.error(response.getJson().getStr("message", ""));
         }
         User user = response.getJson().getBean("data", User.class);
         if (!response.isJsonMessage() || user == null)
-            return ServiceResponse.error("登录数据异常");
+            return serviceResponse.error("登录数据异常");
         ClientMain.setCurrentUser(user);
         userLogin = true;
-        return ServiceResponse.success(null);
+        return serviceResponse.success("登录成功");
     }
 
     /**
      * 注册用户
      */
     public ServiceResponse<?> registerUser(String username, String password) {
+        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
         if (StrUtil.isEmpty(username) || StrUtil.isEmpty(password)) {
-            return ServiceResponse.error("用户名或密码为空");
+            return serviceResponse.error("用户名或密码为空");
         }
         UDPClientConnection conn = ClientMain.getUDPConnection();
         User temp = new User(username, password);
@@ -59,10 +61,10 @@ public class UserService {
                 .setSender(temp.getUserName())
                 .setJsonMessage(new JSONObject(temp));
         Message response = conn.sendMessageToServerSync(message);
-        if (response == null) return ServiceResponse.error("服务器失联!");
+        if (response == null) return serviceResponse.error("服务器失联!");
         if (!MessageType.USER_SIGNUP_REQUEST.equals(response.getMessageType()) || !response.getJson().getBool("success", false))
-            return ServiceResponse.error(response.getJson().getStr("message", ""));
-        return ServiceResponse.success(null);
+            return serviceResponse.error(response.getJson().getStr("message", ""));
+        return serviceResponse.success("注册成功");
     }
 
     /**
@@ -71,8 +73,9 @@ public class UserService {
      * @param username 用户名
      */
     public ServiceResponse<User> queryUserInfoByUsername(String username) {
+        ServiceResponse<User> serviceResponse = new ServiceResponse<>(new User());
         if (StrUtil.isEmpty(username)) {
-            return ServiceResponse.error("用户名为空");
+            return serviceResponse.error("用户名为空");
         }
         Message response = ClientMain.getUDPConnection().sendMessageToServerSync(
                 Message.builder()
@@ -80,12 +83,12 @@ public class UserService {
                         .setSender(ClientMain.getCurrentUserName())
                         .setJsonMessage(new JSONObject().set("username", username)));
         if(response == null || !response.isJsonMessage()){
-            return ServiceResponse.error("服务端异常");
+            return serviceResponse.error("服务端异常");
         }
         if (!response.getJson().getBool("success",false)) {
-            return ServiceResponse.error(response.getJson().getStr("message", ""));
+            return serviceResponse.error(response.getJson().getStr("message", ""));
         }
-        return ServiceResponse.success(response.getJson().getBean("data",User.class));
+        return serviceResponse.success(response.getJson().getBean("data",User.class));
     }
 
     /**

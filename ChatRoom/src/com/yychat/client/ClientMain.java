@@ -4,7 +4,7 @@ import com.yychat.client.service.UserService;
 import com.yychat.client.tcp.TCPClient;
 import com.yychat.client.udp.UDPClientConnection;
 import com.yychat.client.view.ClientLogin;
-import com.yychat.client.view.friendlist.MainWindow;
+import com.yychat.client.view.MainWindow;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.common.model.User;
 

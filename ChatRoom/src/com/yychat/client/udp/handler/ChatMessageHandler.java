@@ -3,8 +3,8 @@ package com.yychat.client.udp.handler;
 import com.yychat.client.ClientMain;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
-import com.yychat.client.view.FriendChat;
-import com.yychat.client.view.friendlist.MainWindow;
+import com.yychat.client.view.chat.FriendChat;
+import com.yychat.client.view.MainWindow;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.User;
 

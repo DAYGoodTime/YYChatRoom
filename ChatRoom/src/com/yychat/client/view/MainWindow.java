@@ -1,19 +1,21 @@
-package com.yychat.client.view.friendlist;
+package com.yychat.client.view;
 
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
-import com.yychat.client.view.FriendChat;
-import com.yychat.client.view.MyInfo;
 import com.yychat.client.util.ImageIconUtil;
+import com.yychat.client.view.chat.FriendChat;
+import com.yychat.client.view.listpanel.FriendListPanel;
+import com.yychat.client.view.listpanel.GroupListPanel;
+import com.yychat.client.view.listpanel.StrangerListPanel;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.User;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseAdapter;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +41,7 @@ public class MainWindow extends JFrame {
     private JPanel contentPanel;        // 内容主面板
     private FriendListPanel friendContentPanel;  // 好友列表内容面板
     private StrangerListPanel strangerListPanel; // 陌生人列表内容面板
-    private JPanel groupContentPanel;   // 群组列表内容面板（预留）
+    private GroupListPanel groupContentPanel;    // 群组列表内容面板
 
     // 导航按钮
     private JButton friendButton;
@@ -205,10 +207,8 @@ public class MainWindow extends JFrame {
         // 创建陌生人列表内容面板
         strangerListPanel = new StrangerListPanel(this);
 
-        // 创建群组列表内容面板（预留）
-        groupContentPanel = new JPanel(new BorderLayout());
-        JLabel groupLabel = new JLabel("群组功能正在开发中...", SwingConstants.CENTER);
-        groupContentPanel.add(groupLabel, BorderLayout.CENTER);
+        // 创建群组列表内容面板
+        groupContentPanel = new GroupListPanel(this);
 
         // 添加到内容面板
         contentPanel.add(friendContentPanel, "friend");
@@ -264,7 +264,7 @@ public class MainWindow extends JFrame {
     /**
      * 创建通用的JLabel好友标签（增强版 - 支持动态头像加载和整行高亮）
      */
-    protected JLabel createUserLabel(User user, MouseListener mouseListener) {
+    public JLabel createUserLabel(User user, MouseListener mouseListener) {
         String userName = user.getUserName();
         ImageIcon icon = loadUserIcon(user);
         JLabel label = new JLabel(userName, icon, JLabel.LEFT);
@@ -495,5 +495,18 @@ public class MainWindow extends JFrame {
 
     public FriendListPanel getFriendListPanel() {
         return friendContentPanel;
+    }
+
+    public GroupListPanel getGroupListPanel() {
+        return groupContentPanel;
+    }
+
+    // 占位方法，后续实现时使用
+    public Object getGroupMembersPanel() {
+        return null; // 后续返回群组管理面板
+    }
+
+    public Object getGroupChatWindow() {
+        return null; // 后续返回群组聊天窗口
     }
 }

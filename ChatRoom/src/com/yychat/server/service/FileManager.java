@@ -1,11 +1,9 @@
 package com.yychat.server.service;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
-import com.yychat.common.model.AttachmentType;
-import com.yychat.common.model.Constant;
-import com.yychat.common.model.Message;
-import com.yychat.common.model.SystemUser;
+import com.yychat.common.model.*;
 
 import java.io.File;
 
@@ -38,6 +36,8 @@ public class FileManager {
                 return AvatarFileManager.handelUserAvatarDownload(message);
             case MESSAGE_FILE:
                 return processMessageFileDownload(message);
+            case GROUP_AVATAR:
+                return AvatarFileManager.handelGroupAvatarDownload(message);
             default:
                 return logError("未知的附件类型 :" + message.getAttachmentType(), message);
         }

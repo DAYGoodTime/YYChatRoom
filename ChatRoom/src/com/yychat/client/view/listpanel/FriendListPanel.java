@@ -1,9 +1,10 @@
-package com.yychat.client.view.friendlist;
+package com.yychat.client.view.listpanel;
 
 import cn.hutool.core.util.StrUtil;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.UserService;
-import com.yychat.client.view.FriendChat;
+import com.yychat.client.view.MainWindow;
+import com.yychat.client.view.chat.FriendChat;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.common.model.User;
 
