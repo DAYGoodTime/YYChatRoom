@@ -42,7 +42,7 @@ public class StrangerListPanel extends JPanel {
         // 添加所有陌生人标签
         for (User stranger : strangers) {
             if (stranger != null && !stranger.getUserName().trim().isEmpty()) {
-                ImageIcon strangerIcon = AvatarService.getInstance().loadUserAvatar(stranger.getUserName(), stranger.getAvatarPath());
+                ImageIcon strangerIcon = AvatarService.loadUserIcon(stranger);
                 JLabel strangerLabel = new JLabel(stranger.getUserName(), strangerIcon, JLabel.LEFT);
                 // 设置整行高亮效果 - 让标签占满整个可用宽度
                 strangerLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));

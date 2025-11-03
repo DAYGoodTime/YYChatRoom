@@ -293,10 +293,8 @@ public class AvatarSelector extends JDialog {
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // 如果有FriendList实例，更新本地显示
-            if (mainWindow != null) {
-                mainWindow.updateUserAvatar(ClientMain.getCurrentUserName(), selectedAvatarPath);
-            }
+            AvatarService.updateUserAvatar(ClientMain.getCurrentUserName(), selectedAvatarPath);
+
             JOptionPane.showMessageDialog(this,
                     "头像更新成功",
                     "更新成功",

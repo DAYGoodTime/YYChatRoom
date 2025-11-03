@@ -506,44 +506,4 @@ public class GroupService {
             return serviceResponse.error("服务器异常: " + e.getMessage());
         }
     }
-
-    /**
-     * 发送群组消息
-     */
-    public void sendGroupMessage(int groupId, String content) {
-        sendGroupMessage(groupId, content, null, null);
-    }
-
-    /**
-     * 发送群组消息（支持附件）
-     */
-    public void sendGroupMessage(int groupId, String content, AttachmentType attachmentType, java.io.File file) {
-        try {
-            // 参数验证
-            if (groupId <= 0) {
-                System.err.println("群组ID无效");
-                return;
-            }
-            if (StrUtil.isEmpty(content) && file == null) {
-                System.err.println("消息内容和文件不能都为空");
-                return;
-            }
-            UDPClientConnection conn = getConnection();
-            String currentUsername = ClientMain.getCurrentUserName();
-
-            Message message = Message.builder()
-                    .setMessageType(MessageType.GROUP_CHAT_MESSAGE)
-                    .setSender(currentUsername)
-                    .setContent(content != null ? content.trim() : "");
-            // 如果有文件附件，设置附件信息
-            if (file != null && attachmentType != null) {
-                message.setAttachment(file, java.io.File.class, attachmentType);
-            }
-            // 异步发送群组消息
-            conn.sendMessageToServer(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("发送群组消息失败: " + e.getMessage());
-        }
-    }
 }

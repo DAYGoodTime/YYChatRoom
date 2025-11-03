@@ -2,6 +2,7 @@ package com.yychat.client.view.listpanel;
 
 import cn.hutool.core.util.StrUtil;
 import com.yychat.client.ClientMain;
+import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.UserService;
 import com.yychat.client.view.MainWindow;
 import com.yychat.client.view.chat.FriendChat;
@@ -61,7 +62,7 @@ public class FriendListPanel extends JPanel {
         for (int i = 0; i < friendListSize; i++) {
             String friendName = friendList.get(i).getUserName();
             if (!StrUtil.isBlank(friendName)) {
-                friendLabels[i] = this.parent.createUserLabel(friendList.get(i), createFriendMouseListener());
+                friendLabels[i] = AvatarService.createUserLabel(friendList.get(i), createFriendMouseListener());
                 friendLabels[i].setAlignmentX(Component.LEFT_ALIGNMENT);
                 listPanel.add(friendLabels[i]);
             }
@@ -99,7 +100,7 @@ public class FriendListPanel extends JPanel {
             return;
         }
         try {
-            JLabel label = this.parent.createUserLabel(new User(friendName, null), createFriendMouseListener());
+            JLabel label = AvatarService.createUserLabel(new User(friendName, null), createFriendMouseListener());
             label.setAlignmentX(Component.LEFT_ALIGNMENT);
             listPanel.add(label);
             listPanel.revalidate();

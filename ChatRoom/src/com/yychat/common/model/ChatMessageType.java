@@ -4,7 +4,9 @@ public enum ChatMessageType {
     UnSupport(-1,"UnSupport"),
     UserChatPainText(0, "UserChatPainText"),
     UserChatFile(1, "UserChatFile"),
-    GroupChatPainText(2,"GroupChatPainText"),;
+    GroupChatPainText(2,"GroupChatPainText"),
+    GroupChatFile(3,"GroupChatFile"),
+    ;
     private final int code;
     private final String type;
 

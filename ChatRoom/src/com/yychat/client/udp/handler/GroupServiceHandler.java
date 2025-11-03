@@ -296,36 +296,36 @@ public class GroupServiceHandler {
      * 处理群组成员列表响应
      */
     public static void handleGroupMembersResponse(Message message) {
-        try {
-            MainWindow mainWindow = ClientMain.getMainWindow();
-            if (mainWindow == null) {
-                return;
-            }
-
-            if (!message.isJsonMessage()) {
-                System.out.println("群组成员列表响应格式错误");
-                return;
-            }
-
-            if (message.getJson().getBool("success", false)) {
-                List<GroupMember> members = message.getJson().getBeanList("data", GroupMember.class);
-                if (members != null && !members.isEmpty()) {
-                    System.out.println("收到群组成员列表: " + members.size() + " 个成员");
-                    // 这里可以更新群组成员显示面板
-
-                    // 如果有群组管理窗口，更新成员列表
-                    if (mainWindow.getGroupMembersPanel() != null) {
-                        // 后续添加群组管理窗口时实现
-                    }
-                }
-            } else {
-                String errorMessage = message.getJson().getStr("message", "获取群组成员列表失败");
-                System.out.println("获取群组成员列表失败: " + errorMessage);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("处理群组成员列表响应异常: " + e.getMessage());
-        }
+//        try {
+//            MainWindow mainWindow = ClientMain.getMainWindow();
+//            if (mainWindow == null) {
+//                return;
+//            }
+//
+//            if (!message.isJsonMessage()) {
+//                System.out.println("群组成员列表响应格式错误");
+//                return;
+//            }
+//
+//            if (message.getJson().getBool("success", false)) {
+//                List<GroupMember> members = message.getJson().getBeanList("data", GroupMember.class);
+//                if (members != null && !members.isEmpty()) {
+//                    System.out.println("收到群组成员列表: " + members.size() + " 个成员");
+//                    // 这里可以更新群组成员显示面板
+//
+//                    // 如果有群组管理窗口，更新成员列表
+//                    if (mainWindow.getGroupMembersPanel() != null) {
+//                        // 后续添加群组管理窗口时实现
+//                    }
+//                }
+//            } else {
+//                String errorMessage = message.getJson().getStr("message", "获取群组成员列表失败");
+//                System.out.println("获取群组成员列表失败: " + errorMessage);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.out.println("处理群组成员列表响应异常: " + e.getMessage());
+//        }
     }
 
     /**
@@ -408,26 +408,26 @@ public class GroupServiceHandler {
      * 处理群组聊天消息
      */
     public static void handleGroupChatMessage(Message message) {
-        try {
-            String sender = message.getSender();
-            String content = message.getContent();
-            System.out.println("收到群组消息 from " + sender + ": " + content);
-
-            MainWindow mainWindow = ClientMain.getMainWindow();
-            if (mainWindow != null) {
-                // 在新线程中处理UI更新
-                new Thread(() -> {
-                    // 这里可以打开或更新群组聊天窗口
-                    if (mainWindow.getGroupChatWindow() != null) {
-                        // 后续添加群组聊天窗口时实现
-                        // mainWindow.getGroupChatWindow().addMessage(sender, content, message.getTime());
-                    }
-                }).start();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("处理群组聊天消息异常: " + e.getMessage());
-        }
+//        try {
+//            String sender = message.getSender();
+//            String content = message.getContent();
+//            System.out.println("收到群组消息 from " + sender + ": " + content);
+//
+//            MainWindow mainWindow = ClientMain.getMainWindow();
+//            if (mainWindow != null) {
+//                // 在新线程中处理UI更新
+//                new Thread(() -> {
+//                    // 这里可以打开或更新群组聊天窗口
+//                    if (mainWindow.getGroupChatWindow() != null) {
+//                        // 后续添加群组聊天窗口时实现
+//                        // mainWindow.getGroupChatWindow().addMessage(sender, content, message.getTime());
+//                    }
+//                }).start();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.out.println("处理群组聊天消息异常: " + e.getMessage());
+//        }
     }
 
     /**

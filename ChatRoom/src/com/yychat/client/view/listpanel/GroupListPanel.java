@@ -1,9 +1,11 @@
 package com.yychat.client.view.listpanel;
 
+import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.GroupService;
 import com.yychat.client.util.ImageIconUtil;
 import com.yychat.client.view.MainWindow;
+import com.yychat.client.view.chat.GroupChat;
 import com.yychat.common.model.Constant;
 import com.yychat.common.model.Group;
 import com.yychat.common.model.ServiceResponse;
@@ -12,15 +14,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -249,8 +245,6 @@ public class GroupListPanel extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     openGroupChat(group);
-                } else if (e.getClickCount() == 1) {
-                    showGroupInfo(group);
                 }
             }
 
@@ -404,9 +398,9 @@ public class GroupListPanel extends JPanel {
         loadAvatarPreview(avatarPreviewLabel, selectedGroupAvatarPath);
 
         // 头像选择按钮事件
-        selectAvatarButton.addActionListener(e ->{
+        selectAvatarButton.addActionListener(e -> {
             String avatarPath = handelSelectAvatarButton(dialog);
-            if(avatarPath != null){
+            if (avatarPath != null) {
                 selectedGroupAvatarPath = avatarPath;
                 loadAvatarPreview(avatarPreviewLabel, avatarPath);
             }
@@ -720,8 +714,12 @@ public class GroupListPanel extends JPanel {
      */
     private void openGroupChat(Group group) {
         // 后续实现群组聊天窗口
-        JOptionPane.showMessageDialog(this, "群组聊天功能正在开发中...\n群组: " + group.getGroupName(),
-                "提示", JOptionPane.INFORMATION_MESSAGE);
+        GroupChat chat = MainWindow.getGroupChat(group.getGroupName());
+        if (chat == null) {
+            String title = "群聊:  " + group.getGroupName();
+            chat = new GroupChat(title, ClientMain.getCurrentUser(), group);
+        }
+        chat.highlightChatWindow();
     }
 
     /**

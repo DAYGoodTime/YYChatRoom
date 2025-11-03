@@ -7,7 +7,9 @@ import com.yychat.common.model.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseListener;
 import java.io.File;
+import java.util.HashMap;
 import java.util.Optional;
 
 import static com.yychat.common.model.Constant.*;
@@ -15,6 +17,9 @@ import static com.yychat.common.model.Constant.*;
 public class AvatarService {
 
     private static final AvatarService instance = new AvatarService();
+
+    private static final HashMap<String, ImageIcon> avatarCache = new HashMap<>(); // 头像缓存
+    private static final HashMap<String, JLabel> userLabelMap = new HashMap<>();    // 用户标签映射
 
     public static AvatarService getInstance() {
         return instance;
@@ -54,7 +59,7 @@ public class AvatarService {
      * @param targetPath 指定路径
      * @return 用户头像，如果获取失败返回null
      */
-    public ImageIcon loadUserAvatar(String userName, String targetPath) {
+    public static ImageIcon loadUserAvatar(String userName, String targetPath) {
         try {
             // 1. 首先尝试从CurrentUser获取头像地址（如果是当前用户）
             String avatarPath = targetPath == null ? getUserAvatarPath(userName) : targetPath;
@@ -70,7 +75,7 @@ public class AvatarService {
             }
             // 3. 本地没有，从服务端获取
             System.out.println("本地没有用户 " + userName + " 的头像，从服务端获取...");
-            icon = loadIconFromServer(userName,AvatarType.UserAvatar);
+            icon = loadIconFromServer(userName, AvatarType.UserAvatar);
             if (icon != null) {
                 System.out.println("成功从服务端获取用户 " + userName + " 的头像");
                 return icon;
@@ -109,7 +114,7 @@ public class AvatarService {
             }
             // 3. 本地没有，从服务端获取
             System.out.println("本地没有群 " + groupName + " 的头像，从服务端获取...");
-            icon = loadIconFromServer(groupName,AvatarType.GroupAvatar);
+            icon = loadIconFromServer(groupName, AvatarType.GroupAvatar);
             if (icon != null) {
                 System.out.println("成功从服务端获取用户 " + groupName + " 的头像");
                 return icon;
@@ -132,7 +137,7 @@ public class AvatarService {
      * @param avatarPath 头像路径
      * @return 图标对象，如果加载失败返回null
      */
-    private ImageIcon loadIconFromLocal(String avatarPath) {
+    private static ImageIcon loadIconFromLocal(String avatarPath) {
         try {
             if (avatarPath == null || avatarPath.trim().isEmpty()) {
                 return null;
@@ -155,7 +160,7 @@ public class AvatarService {
      * @param targetName 用户名或群名
      * @return 图标对象，如果加载失败返回null
      */
-    private ImageIcon loadIconFromServer(String targetName, AvatarType type) {
+    private static ImageIcon loadIconFromServer(String targetName, AvatarType type) {
         try {
             Message message = Message.builder()
                     .setMessageType(Message.TCP_FILE_DOWNLOAD)
@@ -191,8 +196,8 @@ public class AvatarService {
             }
             return null;
         } catch (Exception e) {
-            String typeName = (type.equals(AvatarType.UserAvatar))?"用户":"群";
-            System.err.println("从服务端加载 " + typeName  + " 头像时发生错误: " + e.getMessage());
+            String typeName = (type.equals(AvatarType.UserAvatar)) ? "用户" : "群";
+            System.err.println("从服务端加载 " + typeName + " 头像时发生错误: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -204,7 +209,7 @@ public class AvatarService {
      * @param userName 用户名
      * @return 头像路径，如果无法获取返回null
      */
-    private String getUserAvatarPath(String userName) {
+    private static String getUserAvatarPath(String userName) {
         try {
             User currentUser = ClientMain.getCurrentUser();
             // 如果是当前用户，从CurrentUser获取头像路径
@@ -226,7 +231,7 @@ public class AvatarService {
      * @param userName 用户名
      * @return 头像路径，如果无法获取返回null
      */
-    private String getUserAvatarPathFromServer(String userName) {
+    private static String getUserAvatarPathFromServer(String userName) {
         Message message = Message.builder()
                 .setMessageType(Message.REQUEST_AVATAR_PATH)
                 .setSender(ClientMain.getCurrentUserName())
@@ -246,6 +251,61 @@ public class AvatarService {
     public enum AvatarType {
         UserAvatar,
         GroupAvatar
+    }
+
+
+    /**
+     * 创建通用的JLabel好友标签（增强版 - 支持动态头像加载和整行高亮）
+     */
+    public static JLabel createUserLabel(User user, MouseListener mouseListener) {
+        String userName = user.getUserName();
+        ImageIcon icon = loadUserIcon(user);
+        JLabel label = new JLabel(userName, icon, JLabel.LEFT);
+        // 设置整行高亮效果 - 让标签占满整个可用宽度
+        label.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        label.setPreferredSize(new Dimension(0, 30)); // 高度30，宽度由布局管理器决定
+        label.setMinimumSize(new Dimension(0, 30));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        if (mouseListener != null) {
+            label.addMouseListener(mouseListener);
+        }
+        // 将标签添加到映射中，方便后续更新头像
+        userLabelMap.put(userName, label);
+        //创建的标签默认不启用
+        label.setEnabled(false);
+        return label;
+    }
+
+    /**
+     * 动态加载用户头像（优先从缓存或服务器获取）
+     */
+    public static ImageIcon loadUserIcon(User user) {
+        return loadUserIcon(user.getUserName(), user.getAvatarPath());
+    }
+
+    public static ImageIcon loadUserIcon(String userName, String avatarPath) {
+        // 先检查缓存
+        if (avatarCache.containsKey(userName)) {
+            return avatarCache.get(userName);
+        }
+        // 获取头像
+        ImageIcon icon = AvatarService.loadUserAvatar(userName, avatarPath);
+        avatarCache.put(userName, icon);
+        return icon;
+    }
+
+    /**
+     * 更新用户头像
+     */
+    public static void updateUserAvatar(String userName, String avatarPath) {
+        JLabel friendLabel = userLabelMap.get(userName);
+        if (friendLabel != null) {
+            ImageIcon newIcon = AvatarService.loadUserAvatar(userName, avatarPath);
+            //更新缓存
+            avatarCache.put(userName, newIcon);
+            System.out.println("已更新用户 " + userName + " 的头像为: " + avatarPath);
+            friendLabel.setIcon(newIcon);
+        }
     }
 
 }

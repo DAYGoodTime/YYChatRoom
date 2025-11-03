@@ -188,7 +188,7 @@ public class MyInfo extends JFrame {
         try {
             User currentUser = ClientMain.getCurrentUser();
             avatarPath = currentUser.getAvatarPath();
-            ImageIcon icon = AvatarService.getInstance().loadUserAvatar(currentUser.getUserName(), avatarPath);
+            ImageIcon icon = AvatarService.loadUserIcon(currentUser.getUserName(), avatarPath);
             // 缩放头像到合适大小
             Image scaledImage = icon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
             avatarLabel.setIcon(new ImageIcon(scaledImage));
@@ -208,10 +208,7 @@ public class MyInfo extends JFrame {
         if (currentUser != null) {
             currentUser.setAvatarPath(avatarPath);
         }
-        // 如果有FriendList实例，更新其中的头像显示
-        if (mainWindow != null) {
-            mainWindow.updateUserAvatar(ClientMain.getCurrentUserName(), avatarPath);
-        }
+        AvatarService.updateUserAvatar(ClientMain.getCurrentUserName(), avatarPath);
         infoTextArea.setText("用户名: " + ClientMain.getCurrentUserName() + "\n" +
                 "状态: 在线\n" +
                 "头像: " + avatarPath + "\n" +

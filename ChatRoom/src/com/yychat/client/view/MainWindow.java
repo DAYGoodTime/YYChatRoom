@@ -4,6 +4,7 @@ import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
 import com.yychat.client.util.ImageIconUtil;
 import com.yychat.client.view.chat.FriendChat;
+import com.yychat.client.view.chat.GroupChat;
 import com.yychat.client.view.listpanel.FriendListPanel;
 import com.yychat.client.view.listpanel.GroupListPanel;
 import com.yychat.client.view.listpanel.StrangerListPanel;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 public class MainWindow extends JFrame {
     private final static HashMap<String, FriendChat> friendChatMap = new HashMap<>();
+    private final static HashMap<String, GroupChat> groupChatMap = new HashMap<>();
 
     private final CountDownLatch initializationLatch;
 
@@ -49,17 +51,8 @@ public class MainWindow extends JFrame {
     private JButton groupButton;
 
     // 头像相关字段
-    private final HashMap<String, ImageIcon> avatarCache = new HashMap<>(); // 头像缓存
-    private final HashMap<String, JLabel> userLabelMap = new HashMap<>();    // 用户标签映射
+
     private JLabel userAvatarLabel;     // 用户头像标签
-
-    public static FriendChat getFriendChat(String name) {
-        return friendChatMap.get(name);
-    }
-
-    public static HashMap<String, FriendChat> getFriendChatMap() {
-        return friendChatMap;
-    }
 
     public MainWindow() {
         initializationLatch = new CountDownLatch(1);
@@ -261,56 +254,6 @@ public class MainWindow extends JFrame {
         this.setVisible(true);
     }
 
-    /**
-     * 创建通用的JLabel好友标签（增强版 - 支持动态头像加载和整行高亮）
-     */
-    public JLabel createUserLabel(User user, MouseListener mouseListener) {
-        String userName = user.getUserName();
-        ImageIcon icon = loadUserIcon(user);
-        JLabel label = new JLabel(userName, icon, JLabel.LEFT);
-        // 设置整行高亮效果 - 让标签占满整个可用宽度
-        label.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        label.setPreferredSize(new Dimension(0, 30)); // 高度30，宽度由布局管理器决定
-        label.setMinimumSize(new Dimension(0, 30));
-        label.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        label.addMouseListener(mouseListener);
-        // 将标签添加到映射中，方便后续更新头像
-        userLabelMap.put(userName, label);
-        //创建的标签默认不启用
-        label.setEnabled(false);
-        return label;
-    }
-
-    /**
-     * 动态加载好友头像（优先从缓存或服务器获取）
-     */
-    private ImageIcon loadUserIcon(User user) {
-        String friendName = user.getUserName();
-        // 先检查缓存
-        if (avatarCache.containsKey(friendName)) {
-            return avatarCache.get(friendName);
-        }
-        // 获取头像
-        ImageIcon icon = AvatarService.getInstance().loadUserAvatar(friendName, user.getAvatarPath());
-        avatarCache.put(friendName, icon);
-        return icon;
-    }
-
-    /**
-     * 更新好友头像
-     */
-    public void updateUserAvatar(String userName, String avatarPath) {
-        JLabel friendLabel = userLabelMap.get(userName);
-        if (friendLabel != null) {
-            ImageIcon newIcon = AvatarService.getInstance().loadUserAvatar(userName, avatarPath);
-            //更新缓存
-            avatarCache.put(userName, newIcon);
-            System.out.println("已更新用户 " + userName + " 的头像为: " + avatarPath);
-            friendLabel.setIcon(newIcon);
-        }
-    }
-
 
     /**
      * 等待初始化完成，使用CountDownLatch替代忙等待
@@ -344,7 +287,7 @@ public class MainWindow extends JFrame {
             User currentUser = ClientMain.getCurrentUser();
             if (currentUser != null) {
                 String avatarPath = currentUser.getAvatarPath();
-                ImageIcon icon = AvatarService.getInstance().loadUserAvatar(currentUser.getUserName(), avatarPath);
+                ImageIcon icon = AvatarService.loadUserIcon(currentUser.getUserName(), avatarPath);
                 // 缩放头像到80x80
                 Image scaledImage = icon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
                 userAvatarLabel.setIcon(new ImageIcon(scaledImage));
@@ -501,12 +444,19 @@ public class MainWindow extends JFrame {
         return groupContentPanel;
     }
 
-    // 占位方法，后续实现时使用
-    public Object getGroupMembersPanel() {
-        return null; // 后续返回群组管理面板
+    public static FriendChat getFriendChat(String name) {
+        return friendChatMap.get(name);
     }
 
-    public Object getGroupChatWindow() {
-        return null; // 后续返回群组聊天窗口
+    public static HashMap<String, FriendChat> getFriendChatMap() {
+        return friendChatMap;
+    }
+
+    public static GroupChat getGroupChat(String name) {
+        return groupChatMap.get(name);
+    }
+
+    public static HashMap<String, GroupChat> getGroupChatMap() {
+        return groupChatMap;
     }
 }
