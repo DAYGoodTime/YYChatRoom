@@ -188,7 +188,7 @@ public class MyInfo extends JFrame {
         try {
             User currentUser = ClientMain.getCurrentUser();
             avatarPath = currentUser.getAvatarPath();
-            ImageIcon icon = AvatarService.loadUserIcon(currentUser.getUserName(), avatarPath);
+            ImageIcon icon = AvatarService.loadUserAvatar(currentUser.getUserName(), avatarPath);
             // 缩放头像到合适大小
             Image scaledImage = icon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
             avatarLabel.setIcon(new ImageIcon(scaledImage));

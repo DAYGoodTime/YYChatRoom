@@ -286,8 +286,7 @@ public class MainWindow extends JFrame {
 
             User currentUser = ClientMain.getCurrentUser();
             if (currentUser != null) {
-                String avatarPath = currentUser.getAvatarPath();
-                ImageIcon icon = AvatarService.loadUserIcon(currentUser.getUserName(), avatarPath);
+                ImageIcon icon = AvatarService.loadUserAvatar(currentUser);
                 // 缩放头像到80x80
                 Image scaledImage = icon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
                 userAvatarLabel.setIcon(new ImageIcon(scaledImage));

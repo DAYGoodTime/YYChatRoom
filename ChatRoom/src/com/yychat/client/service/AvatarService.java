@@ -91,6 +91,15 @@ public class AvatarService {
             return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
         }
     }
+    /**
+     * 加载用户头像 - 本地优先，如果本地没有则从服务端获取
+     *
+     * @param user 用户对象
+     * @return 用户头像，如果获取失败返回null
+     */
+    public static ImageIcon loadUserAvatar(User user) {
+        return loadUserAvatar(user.getUserName(),user.getAvatarPath());
+    }
 
     /**
      * 加载用户头像 - 本地优先，如果本地没有则从服务端获取
@@ -261,7 +270,7 @@ public class AvatarService {
      */
     public static JLabel createUserLabel(User user, MouseListener mouseListener) {
         String userName = user.getUserName();
-        ImageIcon icon = loadUserIcon(user);
+        ImageIcon icon = loadUserAvatar(user);
         JLabel label = new JLabel(userName, icon, JLabel.LEFT);
         // 设置整行高亮效果 - 让标签占满整个可用宽度
         label.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
@@ -276,24 +285,6 @@ public class AvatarService {
         //创建的标签默认不启用
         label.setEnabled(false);
         return label;
-    }
-
-    /**
-     * 动态加载用户头像（优先从缓存或服务器获取）
-     */
-    public static ImageIcon loadUserIcon(User user) {
-        return loadUserIcon(user.getUserName(), user.getAvatarPath());
-    }
-
-    public static ImageIcon loadUserIcon(String userName, String avatarPath) {
-        // 先检查缓存
-        if (avatarCache.containsKey(userName)) {
-            return avatarCache.get(userName);
-        }
-        // 获取头像
-        ImageIcon icon = AvatarService.loadUserAvatar(userName, avatarPath);
-        avatarCache.put(userName, icon);
-        return icon;
     }
 
     /**

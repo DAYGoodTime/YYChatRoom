@@ -17,14 +17,10 @@ public class GroupChat extends BaseChat {
         super(title, ClientMain.getCurrentUser());
         this.group = group;
     }
-
-    // 实现BaseChat抽象方法：发送文本消息
     @Override
     protected ServiceResponse<Message> sendTextMessage(String text) {
         return MessageService.getInstance().sendPlainTextMessageToGroup(sender,group,text);
     }
-
-    // 实现BaseChat抽象方法：发送文件消息
     @Override
     protected void sendFileMessage(File file, String message) {
         if (selectedFile == null) return;
@@ -44,4 +40,11 @@ public class GroupChat extends BaseChat {
             appendErrorMessage("文件发送失败: " + e.getMessage());
         }
     }
+
+    @Override
+    protected void loadMessageFromHistory() {
+        //TODO
+    }
+
+
 }

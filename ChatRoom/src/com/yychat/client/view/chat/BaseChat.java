@@ -43,11 +43,14 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         initUI();
         //初始化监听器
         initListener();
+        //尝试加载历史信息
+        loadMessageFromHistory();
     }
 
     // 抽象方法：由子类实现具体的消息发送逻辑
     protected abstract ServiceResponse<Message> sendTextMessage(String text);
     protected abstract void sendFileMessage(File file, String message);
+    protected abstract void loadMessageFromHistory();
 
     //初始化UI
     public void initUI() {
@@ -155,11 +158,10 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         JLabel avatarLabel;
         if (received) {
             // 接收的消息：显示发送方的头像
-            avatarLabel = createAvatarLabel(AvatarService.loadUserIcon(message.getSender(), null));
+            avatarLabel = createAvatarLabel(AvatarService.loadUserAvatar(message.getSender(), null));
         } else {
             // 自己发送的消息：显示当前用户的头像
-            User currentUser = ClientMain.getCurrentUser();
-            avatarLabel = createAvatarLabel(AvatarService.loadUserIcon(currentUser.getUserName(), currentUser.getAvatarPath()));
+            avatarLabel = createAvatarLabel(AvatarService.loadUserAvatar(ClientMain.getCurrentUser()));
         }
         // 创建头像容器面板，确保头像始终在顶部
         JPanel avatarPanel = new JPanel(new BorderLayout());
@@ -427,9 +429,6 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
     /**
      * 显示图片查看器
-     */
-    /**
-     * 显示图片查看器（自动下载原图）
      */
     protected void showImageViewer(Message message, String fileName, int originalWidth, int originalHeight) {
         // 创建一个图片查看器对话框
