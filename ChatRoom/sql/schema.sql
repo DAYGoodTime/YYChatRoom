@@ -3,8 +3,9 @@ create table group_members
     id        bigint auto_increment
         primary key,
     group_id  bigint      not null,
-    joiner    varchar(20) not null,
-    join_time datetime    not null
+    username  varchar(20) not null,
+    join_time datetime    not null,
+    role      char(8)     not null
 );
 
 create table group_messages
@@ -12,7 +13,7 @@ create table group_messages
     id          bigint auto_increment
         primary key,
     sender_name varchar(20) not null,
-    group_id    bigint      not null,
+    group_id    int         not null,
     content     longtext    not null,
     time        datetime    not null
 );
@@ -21,8 +22,11 @@ create table `groups`
 (
     group_id          int auto_increment
         primary key,
-    group_name        varchar(50) not null,
-    group_avatar_path longtext    not null
+    group_name        varchar(50)   not null,
+    group_avatar_path longtext      not null,
+    creator_username  varchar(20)   not null,
+    member_count      int default 0 null,
+    create_time       datetime      not null
 );
 
 create table message
