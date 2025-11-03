@@ -56,7 +56,7 @@ public class MessageService {
         String fileMd5 = MD5.create().digestHex(fileContent);
         json.set("file_md5", fileMd5);
         // 检查是否为图片文件，如果是则生成缩略图信息
-        wrapperImage(fileName,fileContent,json);
+        wrapperImage(fileName, fileContent, json);
 
         Message message = Message.builder()
                 .setMessageType(MessageType.COMMON_CHAT_MESSAGE)
@@ -88,16 +88,16 @@ public class MessageService {
     /**
      * 发送群组消息
      */
-    public ServiceResponse<Message> sendPlainTextMessageToGroup(User sender, int groupId, String content) {
+    public ServiceResponse<Message> sendPlainTextMessageToGroup(User sender, Group group, String content) {
         ServiceResponse<Message> serviceResponse = new ServiceResponse<>(Message.builder());
         JSONObject json = new JSONObject();
         json.set("chat_type", ChatMessageType.GroupChatPainText.getCode());
         json.set("content", content);
-        json.set("group_id", groupId);
+        json.set("group_id", group.getGroupId());
         Message message = Message.builder()
                 .setMessageType(MessageType.GROUP_CHAT_MESSAGE)
                 .setSender(sender.getUserName())
-                .setReceiver(String.valueOf(groupId)) // 群组使用groupId作为receiver
+                .setReceiver(group.getGroupName())
                 .setJsonMessage(json);
         try {
             ClientMain.getUDPConnection().sendChatMessage(message);
@@ -113,7 +113,7 @@ public class MessageService {
      */
     public ServiceResponse<Message> sendFileMessageToGroup(
             User sender,
-            int groupId,
+            Group group,
             String textContent,
             byte[] fileContent,
             String fileName
@@ -124,16 +124,16 @@ public class MessageService {
         json.set("content", textContent);
         json.set("file_name", fileName);
         json.set("file_size", fileContent.length);
-        json.set("group_id", groupId);
+        json.set("group_id", group.getGroupId());
         String fileMd5 = MD5.create().digestHex(fileContent);
         json.set("file_md5", fileMd5);
         // 检查是否为图片文件，如果是则生成缩略图信息
-        wrapperImage(fileName,fileContent,json);
+        wrapperImage(fileName, fileContent, json);
 
         Message message = Message.builder()
                 .setMessageType(MessageType.GROUP_CHAT_MESSAGE)
                 .setSender(sender.getUserName())
-                .setReceiver(String.valueOf(groupId))
+                .setReceiver(group.getGroupName())
                 .setJsonMessage(json);
         try {
             //先进行文件上传，以防接受者需要下载的时候还没上传完成
@@ -166,14 +166,10 @@ public class MessageService {
         }
 
         String lowerFileName = fileName.toLowerCase();
-        return lowerFileName.endsWith(".jpg") ||
-               lowerFileName.endsWith(".jpeg") ||
-               lowerFileName.endsWith(".png") ||
-               lowerFileName.endsWith(".gif") ||
-               lowerFileName.endsWith(".bmp");
+        return lowerFileName.matches(Constant.IMAGE_REX);
     }
 
-    private void wrapperImage(String fileName, byte[] fileContent, JSONObject json){
+    private void wrapperImage(String fileName, byte[] fileContent, JSONObject json) {
 
         boolean isImage = isImageFile(fileName);
         json.set("is_image", isImage);
@@ -195,7 +191,7 @@ public class MessageService {
         }
     }
 
-    public ServiceResponse<byte[]> downloadFileFromServer(String md5){
+    public ServiceResponse<byte[]> downloadFileFromServer(String md5) {
         ServiceResponse<byte[]> serviceResponse = new ServiceResponse<>(new byte[0]);
         Message message = Message.builder()
                 .setMessageType(MessageType.TCP_FILE_DOWNLOAD)
@@ -204,7 +200,7 @@ public class MessageService {
                 .setJsonMessage(new JSONObject().set("file_md5", md5))
                 .setAttachmentType(AttachmentType.MESSAGE_FILE);
         Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
-        if(!response.isPresent()) {
+        if (!response.isPresent()) {
             return serviceResponse.error("无法下载文件");
         }
         return serviceResponse.success(response.get().getAttachment(byte[].class));

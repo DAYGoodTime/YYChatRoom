@@ -1,6 +1,10 @@
 package com.yychat.common.util;
 
+import com.yychat.common.model.Constant;
+
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -20,60 +24,6 @@ public class ThumbnailGenerator {
     public static final int THUMBNAIL_HEIGHT = 150;
     // 缩略图质量（0.1-1.0）
     private static final float THUMBNAIL_QUALITY = 0.7f;
-    // 支持的图片格式
-    private static final String[] SUPPORTED_FORMATS = {"jpg", "jpeg", "png", "gif", "bmp"};
-
-    /**
-     * 生成图片缩略图
-     *
-     * @param imageFile 原始图片文件
-     * @return 缩略图结果，包含缩略图数据和其他信息
-     */
-    public static ThumbnailResult generateThumbnail(File imageFile) {
-        if (imageFile == null || !imageFile.exists()) {
-            return ThumbnailResult.error("图片文件不存在");
-        }
-
-        // 检查文件格式
-        String fileName = imageFile.getName().toLowerCase();
-        String extension = getFileExtension(fileName);
-        if (!isSupportedFormat(extension)) {
-            return ThumbnailResult.error("不支持的图片格式: " + extension);
-        }
-
-        try {
-            // 读取原始图片
-            BufferedImage originalImage = ImageIO.read(imageFile);
-            if (originalImage == null) {
-                return ThumbnailResult.error("无法读取图片文件");
-            }
-
-            int originalWidth = originalImage.getWidth();
-            int originalHeight = originalImage.getHeight();
-
-            // 生成缩略图
-            BufferedImage thumbnail = createThumbnail(originalImage);
-
-            // 获取缩略图的实际尺寸
-            int actualThumbnailWidth = thumbnail.getWidth();
-            int actualThumbnailHeight = thumbnail.getHeight();
-
-            // 转换为字节数组
-            byte[] thumbnailData = imageToBytes(thumbnail, "jpg");
-
-            // 检查缩略图大小是否符合UDP传输要求（60KB）
-            if (thumbnailData.length > 60 * 1024) {
-                // 如果缩略图仍然太大，进一步压缩
-                thumbnailData = compressThumbnail(thumbnail);
-            }
-
-            return new ThumbnailResult(true, thumbnailData, originalWidth, originalHeight,
-                    actualThumbnailWidth, actualThumbnailHeight, imageFile.length(), getFileExtension(fileName));
-
-        } catch (IOException e) {
-            return ThumbnailResult.error("生成缩略图失败: " + e.getMessage());
-        }
-    }
 
     /**
      * 从字节数组生成缩略图（用于接收方）
@@ -102,7 +52,12 @@ public class ThumbnailGenerator {
             int actualThumbnailHeight = thumbnail.getHeight();
 
             // 转换为字节数组
-            byte[] thumbnailData = imageToBytes(thumbnail, "jpg");
+            byte[] thumbnailData = imageToBytes(thumbnail, "webp");
+            // 检查缩略图大小是否符合UDP传输要求（60KB）
+            if (thumbnailData.length > 60 * 1024) {
+                // 如果缩略图仍然太大，进一步压缩
+                thumbnailData = compressThumbnail(thumbnail);
+            }
 
             return new ThumbnailResult(true, thumbnailData, originalWidth, originalHeight,
                     actualThumbnailWidth, actualThumbnailHeight, imageData.length, "jpg");
@@ -121,7 +76,7 @@ public class ThumbnailGenerator {
 
         // 计算缩略图尺寸，保持宽高比
         double scale = Math.min((double) THUMBNAIL_WIDTH / originalWidth,
-                               (double) THUMBNAIL_HEIGHT / originalHeight);
+                (double) THUMBNAIL_HEIGHT / originalHeight);
 
         int thumbnailWidth = (int) (originalWidth * scale);
         int thumbnailHeight = (int) (originalHeight * scale);
@@ -159,8 +114,8 @@ public class ThumbnailGenerator {
         float quality = THUMBNAIL_QUALITY;
         while (quality > 0.1f) {
             baos.reset();
-            javax.imageio.ImageWriter writer = javax.imageio.ImageIO.getImageWritersByFormatName("jpg").next();
-            javax.imageio.ImageWriteParam param = writer.getDefaultWriteParam();
+            ImageWriter writer = ImageIO.getImageWritersByFormatName("webp").next();
+            ImageWriteParam param = writer.getDefaultWriteParam();
             param.setCompressionMode(javax.imageio.ImageWriteParam.MODE_EXPLICIT);
             param.setCompressionQuality(quality);
 
@@ -217,24 +172,8 @@ public class ThumbnailGenerator {
     /**
      * 检查是否支持的图片格式
      */
-    private static boolean isSupportedFormat(String extension) {
-        for (String supported : SUPPORTED_FORMATS) {
-            if (supported.equals(extension)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 检查是否为图片文件
-     */
-    public static boolean isImageFile(File file) {
-        if (file == null || !file.exists()) {
-            return false;
-        }
-        String extension = getFileExtension(file.getName().toLowerCase());
-        return isSupportedFormat(extension);
+    private static boolean isSupportedFormat(String fileName) {
+        return fileName.matches(Constant.IMAGE_REX);
     }
 
     /**
@@ -252,8 +191,8 @@ public class ThumbnailGenerator {
         private final String errorMessage;
 
         private ThumbnailResult(boolean success, byte[] thumbnailData, int originalWidth,
-                              int originalHeight, int thumbnailWidth, int thumbnailHeight,
-                              long originalSize, String format) {
+                                int originalHeight, int thumbnailWidth, int thumbnailHeight,
+                                long originalSize, String format) {
             this.success = success;
             this.thumbnailData = thumbnailData;
             this.originalWidth = originalWidth;
@@ -282,15 +221,44 @@ public class ThumbnailGenerator {
         }
 
         // Getter方法
-        public boolean isSuccess() { return success; }
-        public byte[] getThumbnailData() { return thumbnailData; }
-        public int getOriginalWidth() { return originalWidth; }
-        public int getOriginalHeight() { return originalHeight; }
-        public long getOriginalSize() { return originalSize; }
-        public String getFormat() { return format; }
-        public String getErrorMessage() { return errorMessage; }
-        public int getThumbnailSize() { return thumbnailData != null ? thumbnailData.length : 0; }
-        public int getThumbnailWidth() { return thumbnailWidth; }
-        public int getThumbnailHeight() { return thumbnailHeight; }
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public byte[] getThumbnailData() {
+            return thumbnailData;
+        }
+
+        public int getOriginalWidth() {
+            return originalWidth;
+        }
+
+        public int getOriginalHeight() {
+            return originalHeight;
+        }
+
+        public long getOriginalSize() {
+            return originalSize;
+        }
+
+        public String getFormat() {
+            return format;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public int getThumbnailSize() {
+            return thumbnailData != null ? thumbnailData.length : 0;
+        }
+
+        public int getThumbnailWidth() {
+            return thumbnailWidth;
+        }
+
+        public int getThumbnailHeight() {
+            return thumbnailHeight;
+        }
     }
 }

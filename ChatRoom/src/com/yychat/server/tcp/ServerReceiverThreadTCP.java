@@ -75,7 +75,7 @@ public class ServerReceiverThreadTCP implements Runnable {
     }
 
     private void handleMessage(Message message) {
-        System.out.println("从用户: " + message.getSender() + " 接收到TCP消息 :" + JSONUtil.toJsonStr(message));
+//        System.out.println("从用户: " + message.getSender() + " 接收到TCP消息 :" + JSONUtil.toJsonStr(message));
         Message response;
         try {
             switch (message.getMessageType()) {
@@ -93,7 +93,7 @@ public class ServerReceiverThreadTCP implements Runnable {
                     break;
                 case MessageType.TCP_HEARTBEAT:
                     // 处理心跳消息，发送心跳响应
-                    System.out.println("收到心跳消息 from " + message.getSender());
+//                    System.out.println("收到心跳消息 from " + message.getSender());
                     response = Message.builder()
                             .setMessageType(MessageType.TCP_HEARTBEAT_ACK)
                             .setSender(SystemUser.Server.getStr())

@@ -216,7 +216,7 @@ public class TCPClient {
         if (MessageType.TCP_HEARTBEAT.equals(response.getMessageType())) {
             synchronized (this) {
                 heartbeatFailureCount = 0; // 重置失败计数
-                System.out.println("收到心跳响应");
+//                System.out.println("收到心跳响应");
             }
             return;
         }
@@ -239,7 +239,7 @@ public class TCPClient {
                         oos.flush();
                     }
                     heartbeatFailureCount = 0; // 重置失败计数
-                    System.out.println("发送TCP心跳包");
+//                    System.out.println("发送TCP心跳包");
                 } catch (IOException e) {
                     heartbeatFailureCount++;
                     System.err.println("心跳发送失败 (" + heartbeatFailureCount + "/" + MAX_HEARTBEAT_FAILURES + ")");

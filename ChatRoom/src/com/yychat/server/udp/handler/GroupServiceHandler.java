@@ -5,6 +5,7 @@ import com.yychat.common.model.*;
 import com.yychat.server.service.GroupService;
 import com.yychat.server.udp.ServerReceiverThreadUDP;
 import com.yychat.server.udp.YYChatUDPServer;
+import com.yychat.server.util.DBUtil;
 import com.yychat.server.view.StartServer;
 
 import java.net.InetSocketAddress;
@@ -206,31 +207,28 @@ public class GroupServiceHandler {
      */
     public void handleGroupChatMessage(Message message) {
         try {
-            // 处理群组消息的发送逻辑
-            // 注意：群组消息不需要响应，而是广播给所有群组成员
-            System.out.println("收到群组消息 from " + message.getSender() + ": " + message.getContent());
-            // 这里可以使用GroupService来处理消息发送
-            // 但由于群组消息已经在GroupService中处理了广播逻辑，
-            // 所以这里主要是做一些额外的处理或日志记录
-
-            // 如果需要确认消息，可以发送一个简单的确认响应
-            if (message.isSyncMessage()) {
-                Message ackMessage = Message.builder()
-                        .setMessageType(MessageType.GROUP_CHAT_MESSAGE_RESPONSE)
-                        .setSender(SystemUser.Server.getStr())
-                        .setReceiver(message.getSender())
-                        .setContent("消息已发送");
-
-                udpServer.sendMessageToClient(clientAddress, ackMessage, message);
+            String content = message.getJson().getStr("content", "");
+            System.out.println("收到群组消息 from " + message.getSender() + ": " + content);
+            int groupId = message.getJson().getInt("group_id", -1);
+            if(groupId == -1) {
+                System.out.println("无效的group_id");
+                return;
             }
+
+            //将消息插入数据库中
+            boolean b = DBUtil.saveGroupMessage(message, groupId);
+            Group group = DBUtil.getGroupById(groupId);
+            message.getJson().set("group_info", group);
+            if(!b){
+                System.out.println("插入群组消息失败,groupId:" + groupId);
+                return;
+            }
+            //广播消息
+            udpServer.broadcastGroupMessage(groupId,message);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    // ================================
-    // 辅助方法
-    // ================================
 
     /**
      * 构建响应消息

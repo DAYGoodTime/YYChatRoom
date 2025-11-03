@@ -1,6 +1,8 @@
 package com.yychat.client.udp.handler;
 
 import com.yychat.client.ClientMain;
+import com.yychat.client.view.chat.GroupChat;
+import com.yychat.common.model.Group;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
 import com.yychat.client.view.chat.FriendChat;
@@ -23,15 +25,38 @@ public class ChatMessageHandler {
             System.out.println("收到来自 " + sender.getUserName() + " 的消息: " + message.getJson().getStr("content"));
             // 查找或创建聊天窗口
             FriendChat chat = MainWindow.getFriendChat(chatKey);
-            if(chat==null){
+            if (chat == null) {
                 // 创建新的聊天窗口
-                 chat = new FriendChat(receiver, sender);
+                chat = new FriendChat(receiver, sender);
                 // 将聊天窗口存储到FriendList的map中
                 MainWindow.getFriendChatMap().put(chatKey, chat);
             }
             final FriendChat finalChat = chat;
             chat.highlightChatWindow();
-            SwingUtilities.invokeLater(()-> finalChat.appendSendMessage(message,true));
+            SwingUtilities.invokeLater(() -> finalChat.appendSendMessage(message, true));
+        } catch (Exception e) {
+            System.out.println("处理聊天消息出错");
+            e.printStackTrace();
+        }
+    }
+
+    public static void handleGroupChatMessage(Message message) {
+        System.out.println("接收到 " + message.getSender() + " 发给群组 " + message.getReceiver() + "的消息 :" + message.getJson().toJSONString(0));
+        UserService userService = UserService.getInstance();
+        try {
+            ServiceResponse<User> optionalReceiver = userService.queryUserInfoByUsername(message.getSender());
+            User sender = Optional.ofNullable(optionalReceiver).map(ServiceResponse::getData).orElse(new User(message.getReceiver(), null));
+            GroupChat chat = MainWindow.getGroupChat(message.getReceiver());
+            if (chat == null) {
+                String title = "群聊:  " + message.getReceiver();
+                Group group = message.getJson().getBean("group_info", Group.class);
+                chat = new GroupChat(title, group);
+                // 将聊天窗口保存
+                MainWindow.getGroupChatMap().put(group.getGroupName(), chat);
+            }
+            final GroupChat chatInstance = chat;
+            chat.highlightChatWindow();
+            SwingUtilities.invokeLater(() -> chatInstance.appendSendMessage(message, true));
         } catch (Exception e) {
             System.out.println("处理聊天消息出错");
             e.printStackTrace();

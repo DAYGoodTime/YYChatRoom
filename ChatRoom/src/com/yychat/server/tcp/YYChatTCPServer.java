@@ -31,7 +31,7 @@ public class YYChatTCPServer {
         while (running) {
             try {
                 Socket socket = serverSocket.accept();
-                System.out.println("TCP连接接受: " + socket.getInetAddress());
+//                System.out.println("TCP连接接受: " + socket.getInetAddress());
                 ServerReceiverThreadTCP thread = new ServerReceiverThreadTCP(socket);
                 threadPool.execute(thread);
             } catch (IOException e) {

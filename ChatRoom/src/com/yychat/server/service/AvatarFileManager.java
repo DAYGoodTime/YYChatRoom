@@ -3,10 +3,7 @@ package com.yychat.server.service;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import com.yychat.client.service.AvatarService;
-import com.yychat.common.model.AttachmentType;
-import com.yychat.common.model.Constant;
-import com.yychat.common.model.Message;
-import com.yychat.common.model.SystemUser;
+import com.yychat.common.model.*;
 import com.yychat.common.util.StringUtil;
 import com.yychat.server.util.DBUtil;
 
@@ -244,8 +241,16 @@ public class AvatarFileManager {
             response.setJsonMessage(json);
             return response;
         }
-        String username = message.getJson().getStr("group_name", "");
-        String avatarPath = DBUtil.getGroupByName(username).getGroupAvatarPath();
+        String groupName = message.getJson().getStr("group_name", "");
+        Group group = DBUtil.getGroupByName(groupName);
+        if(group == null) {
+            System.out.println("群组不存在");
+            json.set("success", false);
+            json.set("message", "服务器无法获取此头像");
+            response.setJsonMessage(json);
+            return response;
+        }
+        String avatarPath = group.getGroupAvatarPath();
         Optional<byte[]> image = AvatarFileManager.getGroupAvatarFromBytes(avatarPath);
         if (!image.isPresent()) {
             json.set("success", false);

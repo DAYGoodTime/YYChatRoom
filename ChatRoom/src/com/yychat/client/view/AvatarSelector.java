@@ -241,10 +241,9 @@ public class AvatarSelector extends JDialog {
             String fileName = selectedFile.getName().toLowerCase();
 
             // 验证文件格式
-            if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg") &&
-                    !fileName.endsWith(".png") && !fileName.endsWith(".gif")) {
+            if (!fileName.matches(Constant.IMAGE_REX)) {
                 JOptionPane.showMessageDialog(this,
-                        "仅支持 JPG、PNG、GIF 格式的图片文件！",
+                        "仅支持 JPG、PNG、GIF、WEBP 格式的图片文件！",
                         "格式错误",
                         JOptionPane.ERROR_MESSAGE);
                 return;

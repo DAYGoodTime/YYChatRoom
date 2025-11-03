@@ -450,10 +450,8 @@ public class GroupListPanel extends JPanel {
                 return null;
             }
             String fileName = selectedFile.getName();
-            String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
             // 验证文件格式
-            if (!extension.equals("jpg") && !extension.equals("jpeg")
-                    && !extension.equals("png") && !extension.equals("gif")) {
+            if (!fileName.matches(Constant.IMAGE_REX)) {
                 JOptionPane.showMessageDialog(dialog, "不支持的文件格式，请选择jpg、jpeg、png或gif格式的图片", "错误", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
@@ -717,7 +715,9 @@ public class GroupListPanel extends JPanel {
         GroupChat chat = MainWindow.getGroupChat(group.getGroupName());
         if (chat == null) {
             String title = "群聊:  " + group.getGroupName();
-            chat = new GroupChat(title, ClientMain.getCurrentUser(), group);
+            chat = new GroupChat(title, group);
+            //放入缓存中
+            MainWindow.getGroupChatMap().put(group.getGroupName(), chat);
         }
         chat.highlightChatWindow();
     }

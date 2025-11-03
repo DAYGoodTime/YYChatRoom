@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * 服务器类
@@ -172,22 +173,15 @@ public class YYChatUDPServer implements Runnable {
      */
     public void broadcastGroupMessage(int groupId, Message message) {
         try {
-            // 获取群组成员列表
-            List<GroupMember> members = DBUtil.getGroupMembers(groupId);
+            // 获取群组成员列表(除开自己)
+            List<String> members = DBUtil.getGroupMembers(groupId).stream()
+                    .map(GroupMember::getUsername)
+                    .filter(u->!u.equals(message.getSender()))
+                    .collect(Collectors.toList());
             Map<String, InetSocketAddress> userAddressMap = getUserAddressMap();
-
-            // 发送给所有在线成员（除了发送者自己）
-            for (GroupMember member : members) {
-                String username = member.getUsername();
-                if (!username.equals(message.getSender()) && userAddressMap.containsKey(username)) {
-                    InetSocketAddress memberAddress = userAddressMap.get(username);
-                    Message groupMessage = Message.builder()
-                            .setMessageType(MessageType.GROUP_CHAT_MESSAGE)
-                            .setSender(message.getSender())
-                            .setContent(message.getContent());
-                    sendMessageToClient(memberAddress, groupMessage, null);
-                }
-            }
+            userAddressMap.entrySet().stream()
+                    .filter(entry -> members.contains(entry.getKey()))
+                    .forEach(entry -> sendMessageToClient(entry.getValue(),message,null));
         } catch (Exception e) {
             e.printStackTrace();
         }

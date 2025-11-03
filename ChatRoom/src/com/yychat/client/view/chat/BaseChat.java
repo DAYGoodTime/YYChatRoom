@@ -199,9 +199,11 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         Component messageLabel;
         switch (ChatMessageType.fromCode(message.getJson().getInt("chat_type", -1))) {
             case UserChatPainText:
+            case GroupChatPainText:
                 messageLabel = appendTextMessage(message);
                 break;
             case UserChatFile:
+            case GroupChatFile:
                 messageLabel = appendFileMessage(message, received);
                 break;
             case UnSupport:
@@ -613,7 +615,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
         // 设置默认文件名
         String defaultFileName = fileName;
-        if (!defaultFileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif|bmp)$")) {
+        if (!defaultFileName.toLowerCase().matches(Constant.IMAGE_REX)) {
             defaultFileName += ".jpg"; // 默认添加.jpg扩展名
         }
         fileChooser.setSelectedFile(new File(defaultFileName));

@@ -4,7 +4,6 @@ import com.yychat.client.ClientMain;
 import com.yychat.client.service.GroupService;
 import com.yychat.client.view.MainWindow;
 import com.yychat.common.model.Group;
-import com.yychat.common.model.GroupMember;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.ServiceResponse;
 
@@ -402,32 +401,6 @@ public class GroupServiceHandler {
             e.printStackTrace();
             System.out.println("处理搜索群组响应异常: " + e.getMessage());
         }
-    }
-
-    /**
-     * 处理群组聊天消息
-     */
-    public static void handleGroupChatMessage(Message message) {
-//        try {
-//            String sender = message.getSender();
-//            String content = message.getContent();
-//            System.out.println("收到群组消息 from " + sender + ": " + content);
-//
-//            MainWindow mainWindow = ClientMain.getMainWindow();
-//            if (mainWindow != null) {
-//                // 在新线程中处理UI更新
-//                new Thread(() -> {
-//                    // 这里可以打开或更新群组聊天窗口
-//                    if (mainWindow.getGroupChatWindow() != null) {
-//                        // 后续添加群组聊天窗口时实现
-//                        // mainWindow.getGroupChatWindow().addMessage(sender, content, message.getTime());
-//                    }
-//                }).start();
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            System.out.println("处理群组聊天消息异常: " + e.getMessage());
-//        }
     }
 
     /**

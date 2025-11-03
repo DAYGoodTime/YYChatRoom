@@ -692,7 +692,7 @@ public class DBUtil {
             statement.setInt(2, groupId);
             // 如果是JSON消息，保存JSON内容；否则保存普通文本内容
             if (message.isJsonMessage()) {
-                statement.setString(3, message.getJson().toString());
+                statement.setString(3, message.getJson().toJSONString(0));
             } else {
                 statement.setString(3, message.getContent());
             }

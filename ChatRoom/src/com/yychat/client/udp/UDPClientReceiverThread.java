@@ -77,6 +77,9 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.COMMON_CHAT_MESSAGE:
                         ChatMessageHandler.handleChatMessage(message);
                         break;
+                    case MessageType.GROUP_CHAT_MESSAGE:
+                        ChatMessageHandler.handleGroupChatMessage(message);
+                        break;
                     case MessageType.REQUEST_ONLINE_FRIENDS:
                         UserServiceHandler.handleResponseOnlineFriends(message);
                         break;
@@ -94,9 +97,6 @@ public class UDPClientReceiverThread extends Thread {
                         break;
                     case MessageType.REQUEST_UNK_USER_LIST:
                         UserServiceHandler.handelUnknownFriendsResponse(message);
-                        break;
-                    case MessageType.GROUP_CHAT_MESSAGE:
-                        GroupServiceHandler.handleGroupChatMessage(message);
                         break;
                     case MessageType.GROUP_CHAT_MESSAGE_RESPONSE:
                         GroupServiceHandler.handleGroupChatMessageResponse(message);

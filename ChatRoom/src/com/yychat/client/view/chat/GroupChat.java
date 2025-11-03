@@ -1,11 +1,11 @@
 package com.yychat.client.view.chat;
 
 import cn.hutool.core.io.FileUtil;
+import com.yychat.client.ClientMain;
 import com.yychat.client.service.MessageService;
 import com.yychat.common.model.Group;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.ServiceResponse;
-import com.yychat.common.model.User;
 
 import java.io.File;
 
@@ -13,15 +13,15 @@ public class GroupChat extends BaseChat {
 
     private final Group group;
 
-    public GroupChat(String title, User sender , Group group) {
-        super(title,sender);
+    public GroupChat(String title, Group group) {
+        super(title, ClientMain.getCurrentUser());
         this.group = group;
     }
 
     // 实现BaseChat抽象方法：发送文本消息
     @Override
     protected ServiceResponse<Message> sendTextMessage(String text) {
-        return MessageService.getInstance().sendPlainTextMessageToGroup(sender,group.getGroupId(),text);
+        return MessageService.getInstance().sendPlainTextMessageToGroup(sender,group,text);
     }
 
     // 实现BaseChat抽象方法：发送文件消息
@@ -30,7 +30,7 @@ public class GroupChat extends BaseChat {
         if (selectedFile == null) return;
         try {
             ServiceResponse<Message> response = MessageService.getInstance().sendFileMessageToGroup(
-                    sender, group.getGroupId(), message, FileUtil.readBytes(file), file.getName());
+                    sender, group, message, FileUtil.readBytes(file), file.getName());
             if (!response.isSuccess()) {
                 appendErrorMessage("文件发送失败: " + response.getMessage());
                 return;

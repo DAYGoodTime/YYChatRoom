@@ -171,10 +171,12 @@ public class AvatarService {
                     message = message
                             .setJsonMessage(new JSONObject().set("username", targetName))
                             .setAttachmentType(AttachmentType.IMAGE_AVATAR);
+                    break;
                 case GroupAvatar:
                     message = message
                             .setJsonMessage(new JSONObject().set("group_name", targetName))
                             .setAttachmentType(AttachmentType.GROUP_AVATAR);
+                    break;
 
             }
             Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
