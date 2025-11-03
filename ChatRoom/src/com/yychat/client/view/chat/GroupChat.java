@@ -3,9 +3,7 @@ package com.yychat.client.view.chat;
 import cn.hutool.core.io.FileUtil;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.MessageService;
-import com.yychat.common.model.Group;
-import com.yychat.common.model.Message;
-import com.yychat.common.model.ServiceResponse;
+import com.yychat.common.model.*;
 
 import javax.swing.*;
 import java.io.File;
@@ -17,11 +15,10 @@ public class GroupChat extends BaseChat {
     public GroupChat(String title, Group group) {
         super(title, ClientMain.getCurrentUser(),group.getGroupName());
         this.group = group;
-        //尝试加载历史信息
-        loadMessageFromHistory();
         updateChatMessages();
         // 自动滚动到底部（显示最新消息）
         SwingUtilities.invokeLater(() -> {
+            this.setVisible(true);
             messageArea.setCaretPosition(messageArea.getDocument().getLength());
         });
     }
@@ -50,8 +47,8 @@ public class GroupChat extends BaseChat {
     }
 
     @Override
-    protected void loadMessageFromHistory() {
-        //TODO
+    protected ServiceResponse<Page<ChatMessage>> loadMessageFromHistory() {
+        return MessageService.getInstance().queryGroupMessageHistory(group,++chatHistoryIndex,chatHistoryPageSize);
     }
 
 

@@ -232,6 +232,9 @@ public class MessageService {
         if (!response.isPresent() || !response.get().isJsonMessage()) {
             return serviceResponse.error("服务器失联");
         }
+        if(!response.get().getJson().getBool("success")){
+            return serviceResponse.error(response.get().getJson().getStr("message"));
+        }
         Page<?> page = response.get().getJson().getBean("page", Page.class);
         if(page.getList().isEmpty()){
             return serviceResponse.success(new Page<>());
@@ -264,6 +267,9 @@ public class MessageService {
         Optional<Message> response = ClientMain.getTCPConnection().sendMessage(requestMessage);
         if (!response.isPresent() || !response.get().isJsonMessage()) {
             return serviceResponse.error("服务器失联");
+        }
+        if(!response.get().getJson().getBool("success")){
+            return serviceResponse.error(response.get().getJson().getStr("message"));
         }
         Page<?> page = response.get().getJson().getBean("page", Page.class);
         if(page.getList().isEmpty()){

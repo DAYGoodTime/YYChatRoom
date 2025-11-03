@@ -5,6 +5,7 @@ import com.yychat.client.ClientMain;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.MessageType;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,7 +24,7 @@ public class TCPClient {
     private static final String TCP_HOST = "localhost";
     private static final int TCP_PORT = 3457;
     private static final int CONNECT_TIMEOUT = 5000; // 5秒连接超时
-    private static final int READ_TIMEOUT = 60*1000;   // 60秒读取超时
+    private static final int READ_TIMEOUT = 60 * 1000;   // 60秒读取超时
 
     private Socket socket;
     private ObjectOutputStream oos;
@@ -356,8 +357,11 @@ public class TCPClient {
      */
     private void checkConnectionHealth() {
         System.out.println("检测到连接断开，尝试重连...");
-        if(reconnectWithRetry(3)){
+        if (reconnectWithRetry(3)) {
             System.out.println("重连成功");
+        } else {
+            JOptionPane.showMessageDialog(ClientMain.getMainWindow(), "连接失败", "TCP连接失败", JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
         }
     }
 

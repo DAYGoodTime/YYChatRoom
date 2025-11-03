@@ -19,9 +19,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class BaseChat extends JFrame implements KeyListener {
     protected JButton sendButton = new JButton("发送");
@@ -43,9 +44,10 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     protected int chatHistoryIndex = 0;
     protected int chatHistoryPageSize = 20;
     protected long total = 0;
-    protected Set<ChatMessage> chatHistory = new HashSet<>();
+    protected ArrayList<ChatMessage> chatHistory = new ArrayList<>();
 
     public BaseChat(String title, User sender, String chatKey) {
+        this.setVisible(false);//在加载完之前先不显示
         this.sender = sender;
         this.chatKey = chatKey;
         this.chatTitle = title;
@@ -60,7 +62,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
     protected abstract void sendFileMessage(File file, String message);
 
-    protected abstract void loadMessageFromHistory();
+    protected abstract ServiceResponse<Page<ChatMessage>> loadMessageFromHistory();
 
     //初始化UI
     public void initUI() {
@@ -198,15 +200,14 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         // 顶部：时间 + 发送者名称
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         headerPanel.setOpaque(false);
-        SimpleDateFormat sdf;
+        DateTimeFormatter formatter;
         if (chatMessage.getTime().isBefore(LocalDate.now().atStartOfDay())) {
-            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         } else {
-            sdf = new SimpleDateFormat("HH:mm:ss");
+            formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         }
-        String currentTime = sdf.format(new Date());
         // 时间标签（灰色）
-        JLabel timeLabel = new JLabel("[" + currentTime + "]");
+        JLabel timeLabel = new JLabel("[" + chatMessage.getTime().format(formatter) + "]");
         timeLabel.setForeground(Color.GRAY);
         timeLabel.setFont(new Font("微软雅黑", Font.PLAIN, 10));
         // 发送者标签（蓝色）
@@ -452,7 +453,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         // 只有收到的文件消息才显示下载按钮
         if (received) {
             fileInfoPanel.add(Box.createHorizontalStrut(10)); // 文件名和下载按钮之间的间距
-            fileInfoPanel.add(downloadButton);
+            fileInfoPanel.add(downloadButton,RIGHT_ALIGNMENT);
         }
 
         fileInfoPanel.add(Box.createHorizontalGlue()); // 填充剩余空间
@@ -848,18 +849,6 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
     /**
      * 高亮当前聊天窗口（从最小化状态恢复并激活）
-     * <p>
-     * 此方法的功能：
-     * 1. 如果窗口被最小化，将其恢复正常状态
-     * 2. 确保窗口可见
-     * 3. 将窗口移到前台
-     * 4. 请求窗口获得焦点
-     * 5. 让消息输入框获得焦点，方便用户输入
-     * <p>
-     * 使用场景：
-     * - 收到新消息时提醒用户
-     * - 需要用户关注此聊天窗口时
-     * - 从系统托盘恢复窗口时
      */
     public void highlightChatWindow() {
         // 使用SwingUtilities确保在EDT中执行UI操作
@@ -908,6 +897,21 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     }
 
     public void updateChatMessages() {
+        //尝试加载历史信息
+        ServiceResponse<Page<ChatMessage>> response = loadMessageFromHistory();
+        Page<ChatMessage> responsePage = response.getData();
+        this.chatHistoryIndex = responsePage.getIndex();
+        this.chatHistoryPageSize = responsePage.getPageSize();
+        this.total = responsePage.getTotal();
+        //Set应该可以合并消息
+        //先添加传进来的消息，再合并已经有的消息
+        List<ChatMessage> tempList = responsePage.getList();
+        //获取完反转一下（因为消息是从新到旧，我们需要旧到新）
+        Collections.reverse(tempList);
+        tempList.addAll(chatHistory);
+        chatHistory.clear();
+        List<ChatMessage> newList = tempList.stream().distinct().collect(Collectors.toList());
+        chatHistory.addAll(newList);
         // 清空消息显示区域
         messageArea.setText("");
         // 检查是否还有更多消息需要加载
@@ -916,8 +920,6 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         }
         // 重新显示所有历史消息
         displayChatHistory();
-
-
     }
 
     /**
@@ -964,8 +966,6 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         loadMoreButton.addActionListener(e -> {
             // 移除加载更多按钮
             buttonContainer.remove(loadMoreButton);
-            // 重新加载历史消息（loadMessageFromHistory已经实现了获取逻辑）
-            loadMessageFromHistory();
             updateChatMessages();
         });
         buttonContainer.add(loadMoreButton);

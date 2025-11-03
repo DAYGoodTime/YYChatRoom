@@ -47,12 +47,12 @@ public class ChatMessage {
     public boolean equals(Object o) {
         if (!(o instanceof ChatMessage)) return false;
         ChatMessage that = (ChatMessage) o;
-        return Objects.equals(id, that.id) && Objects.equals(senderName, that.senderName) && Objects.equals(receiver, that.receiver);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, senderName, receiver);
+        return Objects.hash(id, time);
     }
 
     public static ChatMessage fromJSONObject(JSONObject jsonObject) {
@@ -61,7 +61,7 @@ public class ChatMessage {
         chatMessage.senderName = jsonObject.getStr("senderName");
         chatMessage.receiver = jsonObject.getStr("receiver");
         chatMessage.content = jsonObject.getJSONObject("content");
-        chatMessage.time = jsonObject.getLocalDateTime("time",null);
+        chatMessage.time = jsonObject.getLocalDateTime("time", null);
         return chatMessage;
     }
 }

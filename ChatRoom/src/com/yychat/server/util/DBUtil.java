@@ -756,7 +756,7 @@ public class DBUtil {
         }
 
         // 查询分页消息数据（按时间正序）
-        String query = "SELECT id, sender, receiver, content, sendtime FROM message WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?) ORDER BY sendtime DESC LIMIT ? OFFSET ?";
+        String query = "SELECT id, sender, receiver, content, sendtime FROM message WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?) ORDER BY sendtime desc LIMIT ? OFFSET ?";
         PreparedStatement statement = null;
         try {
             statement = dataBase.prepareStatement(query);
@@ -825,7 +825,7 @@ public class DBUtil {
         }
 
         // 查询分页消息数据（按时间正序）
-        String query = "SELECT id, sender_name, content, time FROM group_messages WHERE group_id = ? ORDER BY time DESC LIMIT ? OFFSET ?";
+        String query = "SELECT id, sender_name, content, `time` FROM group_messages WHERE group_id = ? ORDER BY `time` desc LIMIT ? OFFSET ?";
         PreparedStatement statement = null;
         try {
             statement = dataBase.prepareStatement(query);

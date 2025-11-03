@@ -23,7 +23,7 @@ public class UserRequestHandler {
                 .setMessageType(request.getMessageType())
                 .setSender(SystemUser.Server.getStr())
                 .setReceiver(request.getSender())
-                .setJsonMessage(new JSONObject().set("page", page));
+                .setJsonMessage(new JSONObject().set("page", page).set("success", true));
     }
 
     private static Message logError(String message, Message request) {

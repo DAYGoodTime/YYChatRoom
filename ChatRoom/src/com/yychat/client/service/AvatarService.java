@@ -70,7 +70,7 @@ public class AvatarService {
             // 2. 尝试从本地加载头像
             ImageIcon icon = loadIconFromLocal(avatarPath);
             if (icon != null) {
-                System.out.println("成功从本地加载 " + userName + " 的头像: " + avatarPath);
+//                System.out.println("成功从本地加载 " + userName + " 的头像: " + avatarPath);
                 return icon;
             }
             // 3. 本地没有，从服务端获取

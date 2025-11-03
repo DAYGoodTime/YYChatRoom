@@ -57,7 +57,7 @@ public class GroupRequestHandler {
     }
 
     public static Message handelGroupMessageHistoryRequest(Message request) {
-        if (request.isJsonMessage()) {
+        if (!request.isJsonMessage()) {
             return logError("消息格式错误", request);
         }
         int groupId = request.getJson().getInt("group_id", -1);
@@ -68,7 +68,7 @@ public class GroupRequestHandler {
                 .setMessageType(request.getMessageType())
                 .setSender(SystemUser.Server.getStr())
                 .setReceiver(request.getSender())
-                .setJsonMessage(new JSONObject().set("page",page));
+                .setJsonMessage(new JSONObject().set("page",page).set("success", true));
     }
 
     private static Message logError(String message, Message request) {
