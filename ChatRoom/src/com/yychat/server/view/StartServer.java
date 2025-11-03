@@ -1,6 +1,5 @@
 package com.yychat.server.view;
 
-import com.yychat.client.udp.UDPClientConnection;
 import com.yychat.server.service.AvatarFileManager;
 import com.yychat.server.tcp.YYChatTCPServer;
 import com.yychat.server.udp.YYChatUDPServer;
@@ -26,12 +25,9 @@ public class StartServer {
             System.err.println("数据库连接失败，服务器启动终止");
             return;
         }
-        System.out.println("✓ 数据库连接成功");
-
         // 2. 初始化头像文件管理系统
         System.out.println("2. 初始化头像文件管理系统...");
         AvatarFileManager.initializeAvatarDirectories();
-        System.out.println("✓ 头像文件管理系统初始化完成");
 
         // 3. 启动UDP服务器
         // 启动TCP服务器用于文件传输

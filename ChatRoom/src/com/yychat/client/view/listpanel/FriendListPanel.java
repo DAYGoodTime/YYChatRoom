@@ -154,8 +154,7 @@ public class FriendListPanel extends JPanel {
                             return;
                         }
                         // 创建聊天窗口
-                        chat = new FriendChat(sender, optionalUser.getData());
-                        MainWindow.getFriendChatMap().put(chatKey, chat);
+                        SwingUtilities.invokeLater(()->new FriendChat(sender, optionalUser.getData(),chatKey));
                     }
                 }
             }

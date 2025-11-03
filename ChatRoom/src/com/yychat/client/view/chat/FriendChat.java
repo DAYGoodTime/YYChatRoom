@@ -2,21 +2,29 @@ package com.yychat.client.view.chat;
 
 
 import cn.hutool.core.io.FileUtil;
-import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.MessageService;
-import com.yychat.common.model.Message;
-import com.yychat.common.model.ServiceResponse;
-import com.yychat.common.model.User;
+import com.yychat.client.view.MainWindow;
+import com.yychat.common.model.*;
 
 import javax.swing.*;
 import java.io.File;
+import java.util.Arrays;
 
 public class FriendChat extends BaseChat {
     protected User receiver;
 
-    public FriendChat(User sender, User receiver) {
-        super("与 " + receiver.getUserName() + " 的聊天界面",sender);
+    public FriendChat(User sender, User receiver,String chatKey) {
+        super("与 " + receiver.getUserName() + " 的聊天界面",sender,chatKey);
         this.receiver = receiver;
+        // 将聊天窗口存储到FriendList的map中
+        MainWindow.getFriendChatMap().put(chatKey, this);
+        //尝试加载历史信息
+        loadMessageFromHistory();
+        updateChatMessages();
+        // 自动滚动到底部（显示最新消息）
+        SwingUtilities.invokeLater(() -> {
+            messageArea.setCaretPosition(messageArea.getDocument().getLength());
+        });
     }
 
     @Override
@@ -35,7 +43,7 @@ public class FriendChat extends BaseChat {
                 return;
             }
             Message responseMessage = response.getData();
-            appendSendMessage(responseMessage, false);
+            appendMessage(responseMessage, false);
             // 清除文件选择
             clearSelectedFile();
         } catch (Exception e) {
@@ -46,7 +54,26 @@ public class FriendChat extends BaseChat {
 
     @Override
     protected void loadMessageFromHistory() {
-        //TODO
+        ServiceResponse<Page<ChatMessage>> response = MessageService.getInstance().queryUserMessageHistory(
+                sender.getUserName(),
+                receiver.getUserName(),
+                ++chatHistoryIndex,
+                chatHistoryPageSize
+        );
+        if(!response.isSuccess()){
+            JOptionPane.showMessageDialog(this,"消息加载失败",response.getMessage(),JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Page<ChatMessage> responsePage = response.getData();
+        this.chatHistoryIndex = responsePage.getIndex();
+        this.chatHistoryPageSize = responsePage.getPageSize();
+        this.total = responsePage.getTotal();
+        //Set应该可以合并消息
+        ChatMessage[] old = chatHistory.toArray(new ChatMessage[]{});
+        chatHistory.clear();
+        //先添加最旧的，再添加新的
+        chatHistory.addAll(responsePage.getList());
+        chatHistory.addAll(Arrays.asList(old));
     }
 
 }

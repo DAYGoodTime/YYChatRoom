@@ -150,14 +150,17 @@ public class ServerReceiverThreadUDP implements Runnable {
 
     private void handleChatMessage(Message message) {
         // 记录聊天消息到数据库
-        DBUtil.insertChatMessage(message.getSender(), message.getReceiver(), message.getJson().toJSONString(0), message.getTime());
+        long id = DBUtil.insertChatMessage(message.getSender(), message.getReceiver(), message.getJson().toJSONString(0), message.getTime());
+        if(id == -1){
+            System.out.println("消息插入失败，跳过");
+            return;
+        }
+        message.setJsonMessage(message.getJson().set("message_id", id));
         // 获取接收方的地址
         InetSocketAddress receiverAddress = serverThread.getUserAddress(message.getReceiver());
         if (receiverAddress != null) {
             // 转发消息给接收方
             serverThread.sendMessageToClient(receiverAddress, message, null);
-        } else {
-            System.out.println(message.getReceiver() + " 不在线上");
         }
     }
 

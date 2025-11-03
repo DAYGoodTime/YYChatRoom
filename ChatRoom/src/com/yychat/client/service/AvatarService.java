@@ -65,7 +65,7 @@ public class AvatarService {
             String avatarPath = targetPath == null ? getUserAvatarPath(userName) : targetPath;
             if (avatarPath == null) {
                 System.out.println("用户 " + userName + " 头像路径为空，使用默认头像");
-                avatarPath = DEFAULT_AVATAR_FULL_PATH; // 默认头像
+                avatarPath = DEFAULT_AVATAR; // 默认头像
             }
             // 2. 尝试从本地加载头像
             ImageIcon icon = loadIconFromLocal(avatarPath);
@@ -82,13 +82,13 @@ public class AvatarService {
             }
             // 4. 服务端获取失败，返回默认头像
             System.out.println("无法获取用户 " + userName + " 的头像，使用默认头像");
-            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
+            return loadIconFromLocal(DEFAULT_AVATAR);
 
         } catch (Exception e) {
             System.err.println("加载用户 " + userName + " 头像时发生错误: " + e.getMessage());
             e.printStackTrace();
             // 发生错误时返回默认头像
-            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
+            return loadIconFromLocal(DEFAULT_AVATAR);
         }
     }
     /**
@@ -113,7 +113,7 @@ public class AvatarService {
             // 1. 首先尝试从CurrentUser获取头像地址（如果是当前用户）
             if (targetPath == null) {
                 System.out.println("群 " + groupName + " 头像路径为空，使用默认头像");
-                targetPath = DEFAULT_AVATAR_FULL_PATH; // 默认头像
+                targetPath = DEFAULT_AVATAR; // 默认头像
             }
             // 2. 尝试从本地加载头像
             ImageIcon icon = loadIconFromLocal(targetPath);
@@ -130,13 +130,13 @@ public class AvatarService {
             }
             // 4. 服务端获取失败，返回默认头像
             System.out.println("无法获取群 " + groupName + " 的头像，使用默认头像");
-            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
+            return loadIconFromLocal(DEFAULT_AVATAR);
 
         } catch (Exception e) {
             System.err.println("加载群 " + groupName + " 头像时发生错误: " + e.getMessage());
             e.printStackTrace();
             // 发生错误时返回默认头像
-            return loadIconFromLocal(DEFAULT_AVATAR_FULL_PATH);
+            return loadIconFromLocal(DEFAULT_AVATAR);
         }
     }
 

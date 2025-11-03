@@ -27,13 +27,11 @@ public class ChatMessageHandler {
             FriendChat chat = MainWindow.getFriendChat(chatKey);
             if (chat == null) {
                 // 创建新的聊天窗口
-                chat = new FriendChat(receiver, sender);
-                // 将聊天窗口存储到FriendList的map中
-                MainWindow.getFriendChatMap().put(chatKey, chat);
+                chat = new FriendChat(receiver, sender,chatKey);
             }
             final FriendChat finalChat = chat;
             chat.highlightChatWindow();
-            SwingUtilities.invokeLater(() -> finalChat.appendSendMessage(message, true));
+            SwingUtilities.invokeLater(() -> finalChat.appendMessage(message, true));
         } catch (Exception e) {
             System.out.println("处理聊天消息出错");
             e.printStackTrace();
@@ -42,10 +40,7 @@ public class ChatMessageHandler {
 
     public static void handleGroupChatMessage(Message message) {
         System.out.println("接收到 " + message.getSender() + " 发给群组 " + message.getReceiver() + "的消息 :" + message.getJson().toJSONString(0));
-        UserService userService = UserService.getInstance();
         try {
-            ServiceResponse<User> optionalReceiver = userService.queryUserInfoByUsername(message.getSender());
-            User sender = Optional.ofNullable(optionalReceiver).map(ServiceResponse::getData).orElse(new User(message.getReceiver(), null));
             GroupChat chat = MainWindow.getGroupChat(message.getReceiver());
             if (chat == null) {
                 String title = "群聊:  " + message.getReceiver();
@@ -56,10 +51,17 @@ public class ChatMessageHandler {
             }
             final GroupChat chatInstance = chat;
             chat.highlightChatWindow();
-            SwingUtilities.invokeLater(() -> chatInstance.appendSendMessage(message, true));
+            SwingUtilities.invokeLater(() -> chatInstance.appendMessage(message, true));
         } catch (Exception e) {
             System.out.println("处理聊天消息出错");
             e.printStackTrace();
         }
+    }
+
+    public static void handleUserChatHistoryMessage(Message message) {
+
+    }
+    public static void handleGroupChatHistoryMessage(Message message) {
+
     }
 }

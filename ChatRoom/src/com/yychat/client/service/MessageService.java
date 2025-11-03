@@ -7,7 +7,9 @@ import com.yychat.client.ClientMain;
 import com.yychat.common.model.*;
 import com.yychat.common.util.ThumbnailGenerator;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MessageService {
 
@@ -206,5 +208,75 @@ public class MessageService {
         return serviceResponse.success(response.get().getAttachment(byte[].class));
     }
 
+
+    public ServiceResponse<Page<ChatMessage>> queryUserMessageHistory(
+            String sender,
+            String receiver,
+            int index,
+            int pageSize
+    ) {
+        ServiceResponse<Page<ChatMessage>> serviceResponse = new ServiceResponse<>(new Page<>());
+        JSONObject json = new JSONObject();
+        json.set("sender", sender);
+        json.set("receiver", receiver);
+        json.set("index", index);
+        json.set("chat_key", receiver + "to" + sender);
+        json.set("page_size", pageSize);
+        Message requestMessage = Message.builder()
+                .setMessageType(MessageType.TCP_USER_MESSAGE_REQUEST)
+                .setSender(sender)
+                .setReceiver(SystemUser.Server.getStr())
+                .setJsonMessage(json);
+
+        Optional<Message> response = ClientMain.getTCPConnection().sendMessage(requestMessage);
+        if (!response.isPresent() || !response.get().isJsonMessage()) {
+            return serviceResponse.error("服务器失联");
+        }
+        Page<?> page = response.get().getJson().getBean("page", Page.class);
+        if(page.getList().isEmpty()){
+            return serviceResponse.success(new Page<>());
+        }
+        Object firstEle =  page.getList().get(0);
+        if(firstEle instanceof JSONObject){//JSON对泛型对象只能解析为JSONObject
+            List<ChatMessage> collect = page.getList().stream()
+                    .map(e ->ChatMessage.fromJSONObject(((JSONObject) e)))
+                    .collect(Collectors.toList());
+            return serviceResponse.success(new Page<>(page, collect));
+        }
+        return serviceResponse.error("无法解析历史消息");
+    }
+
+    public ServiceResponse<Page<ChatMessage>> queryGroupMessageHistory(
+            Group group,
+            int index,
+            int pageSize
+    ) {
+        ServiceResponse<Page<ChatMessage>> serviceResponse = new ServiceResponse<>(new Page<>());
+        JSONObject json = new JSONObject();
+        json.set("group_id", group.getGroupId());
+        json.set("index", index);
+        json.set("page_size", pageSize);
+        Message requestMessage = Message.builder()
+                .setMessageType(MessageType.TCP_GROUP_MESSAGE_REQUEST)
+                .setSender(ClientMain.getCurrentUserName())
+                .setReceiver(SystemUser.Server.getStr())
+                .setJsonMessage(json);
+        Optional<Message> response = ClientMain.getTCPConnection().sendMessage(requestMessage);
+        if (!response.isPresent() || !response.get().isJsonMessage()) {
+            return serviceResponse.error("服务器失联");
+        }
+        Page<?> page = response.get().getJson().getBean("page", Page.class);
+        if(page.getList().isEmpty()){
+            return serviceResponse.success(new Page<>());
+        }
+        Object firstEle =  page.getList().get(0);
+        if(firstEle instanceof JSONObject){//JSON对泛型对象只能解析为JSONObject
+            List<ChatMessage> collect = page.getList().stream()
+                    .map(e ->ChatMessage.fromJSONObject(((JSONObject) e)))
+                    .collect(Collectors.toList());
+            return serviceResponse.success(new Page<>(page, collect));
+        }
+        return serviceResponse.error("无法解析历史消息");
+    }
 
 }

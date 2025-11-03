@@ -216,13 +216,16 @@ public class GroupServiceHandler {
             }
 
             //将消息插入数据库中
-            boolean b = DBUtil.saveGroupMessage(message, groupId);
+            long id = DBUtil.saveGroupMessage(message, groupId);
             Group group = DBUtil.getGroupById(groupId);
-            message.getJson().set("group_info", group);
-            if(!b){
+            if(id == -1){
                 System.out.println("插入群组消息失败,groupId:" + groupId);
                 return;
             }
+            JSONObject json = message.getJson();
+            json.set("group_info", group)
+                    .set("message_id", id);
+            message.setJsonMessage(json);
             //广播消息
             udpServer.broadcastGroupMessage(groupId,message);
         } catch (Exception e) {

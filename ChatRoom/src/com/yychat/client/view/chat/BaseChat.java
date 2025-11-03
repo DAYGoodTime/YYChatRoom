@@ -2,6 +2,7 @@ package com.yychat.client.view.chat;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.MessageService;
@@ -19,6 +20,8 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class BaseChat extends JFrame implements KeyListener {
     protected JButton sendButton = new JButton("发送");
@@ -28,6 +31,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
     //发送者
     protected User sender;
+    protected String chatKey;//用来从map获取窗口的key
 
     // 文件选择显示面板
     protected JPanel fileSelectionPanel = null;
@@ -36,20 +40,26 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     //已选择的文件
     protected File selectedFile = null;
 
-    public BaseChat(String title, User sender) {
+    protected int chatHistoryIndex = 0;
+    protected int chatHistoryPageSize = 20;
+    protected long total = 0;
+    protected Set<ChatMessage> chatHistory = new HashSet<>();
+
+    public BaseChat(String title, User sender, String chatKey) {
         this.sender = sender;
+        this.chatKey = chatKey;
         this.chatTitle = title;
         //初始化UI
         initUI();
         //初始化监听器
         initListener();
-        //尝试加载历史信息
-        loadMessageFromHistory();
     }
 
     // 抽象方法：由子类实现具体的消息发送逻辑
     protected abstract ServiceResponse<Message> sendTextMessage(String text);
+
     protected abstract void sendFileMessage(File file, String message);
+
     protected abstract void loadMessageFromHistory();
 
     //初始化UI
@@ -113,7 +123,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
                     appendErrorMessage("消息发送失败: " + response.getMessage());
                     return;
                 }
-                appendSendMessage(response.getData(), false);
+                appendMessage(response.getData(), false);
                 return;
             }
 
@@ -125,7 +135,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         sendButton.setForeground(Color.blue);
         // 发送文件按钮事件监听
         sendFileButton.addActionListener(e -> {
-            JFileChooser fileChooser =  new JFileChooser();
+            JFileChooser fileChooser = new JFileChooser();
             // 设置文件选择器为只选择文件（不是目录）
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             // 显示文件选择对话框
@@ -151,14 +161,31 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         return fileSelectionPanel;
     }
 
-    public void appendSendMessage(Message message, boolean received) {
+    /**
+     * 往消息内容区内添加消息
+     */
+    public void appendMessage(Message message, boolean received) {
+        JSONObject json = message.getJson();
+        appendMessage(new ChatMessage(
+                json.getLong("message_id", -1L),
+                message.getSender(),
+                message.getReceiver(),
+                json,
+                message.getTime()
+        ), received);
+    }
+
+    /**
+     * 往消息内容区内添加消息
+     */
+    public void appendMessage(ChatMessage chatMessage, boolean received) {
         // 创建消息面板：左侧头像 + 右侧内容和时间
         JPanel messagePanel = new JPanel(new BorderLayout(10, 5));
         // 左侧：发送方头像（根据接收状态选择正确的头像）
         JLabel avatarLabel;
         if (received) {
             // 接收的消息：显示发送方的头像
-            avatarLabel = createAvatarLabel(AvatarService.loadUserAvatar(message.getSender(), null));
+            avatarLabel = createAvatarLabel(AvatarService.loadUserAvatar(chatMessage.getSenderName(), null));
         } else {
             // 自己发送的消息：显示当前用户的头像
             avatarLabel = createAvatarLabel(AvatarService.loadUserAvatar(ClientMain.getCurrentUser()));
@@ -172,9 +199,9 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         headerPanel.setOpaque(false);
         SimpleDateFormat sdf;
-        if(message.getTime().isBefore(LocalDate.now().atStartOfDay())){
+        if (chatMessage.getTime().isBefore(LocalDate.now().atStartOfDay())) {
             sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        }else {
+        } else {
             sdf = new SimpleDateFormat("HH:mm:ss");
         }
         String currentTime = sdf.format(new Date());
@@ -184,13 +211,13 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         timeLabel.setFont(new Font("微软雅黑", Font.PLAIN, 10));
         // 发送者标签（蓝色）
         JLabel senderLabel;
-        if (received) {
-            senderLabel = new JLabel(message.getSender());
-            senderLabel.setForeground(Color.GREEN);
-            senderLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        } else {
+        if (chatMessage.getSenderName().equals(sender.getUserName())) {
             senderLabel = new JLabel("我");
             senderLabel.setForeground(Color.BLUE);
+            senderLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        } else {
+            senderLabel = new JLabel(chatMessage.getSenderName());
+            senderLabel.setForeground(Color.GREEN);
             senderLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         }
 
@@ -199,14 +226,15 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
         // 消息内容标签
         Component messageLabel;
-        switch (ChatMessageType.fromCode(message.getJson().getInt("chat_type", -1))) {
+        JSONObject contentJson = chatMessage.getContent();
+        switch (ChatMessageType.fromCode(contentJson.getInt("chat_type", -1))) {
             case UserChatPainText:
             case GroupChatPainText:
-                messageLabel = appendTextMessage(message);
+                messageLabel = appendTextMessage(contentJson);
                 break;
             case UserChatFile:
             case GroupChatFile:
-                messageLabel = appendFileMessage(message, received);
+                messageLabel = appendFileMessage(contentJson, received);
                 break;
             case UnSupport:
             default:
@@ -235,10 +263,11 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         messageArea.setCaretPosition(messageArea.getDocument().getLength());
     }
 
-    protected Component appendTextMessage(Message message) {
-        String result;
-        if (!message.isJsonMessage()) result = "[错误]未知消息";
-        else result = message.getJson().getStr("content", "[错误]未知消息");
+    /**
+     * 返回文字消息组件
+     */
+    protected Component appendTextMessage(JSONObject contentJson) {
+        String result = contentJson.getStr("content", "[错误]未知消息");
         JLabel messageLabel = new JLabel(result);
         messageLabel.setForeground(Color.BLUE);
         messageLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
@@ -246,12 +275,16 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         return messageLabel;
     }
 
-    protected Component appendFileMessage(Message message, boolean received) {
-        String content = message.getJson().getStr("content", "");
-        String fileName = message.getJson().getStr("file_name", "");
-        String fileMd5 = message.getJson().getStr("file_md5", "");
-        int fileSizeLength = message.getJson().getInt("file_size", -1);
-        boolean isImage = message.getJson().getBool("is_image", false);
+    /**
+     * 返回文件消息组件
+     * 如果是图片则返回缩略图
+     */
+    protected Component appendFileMessage(JSONObject contentJson, boolean received) {
+        String content = contentJson.getStr("content", "");
+        String fileName = contentJson.getStr("file_name", "");
+        String fileMd5 = contentJson.getStr("file_md5", "");
+        int fileSizeLength = contentJson.getInt("file_size", -1);
+        boolean isImage = contentJson.getBool("is_image", false);
 
         // 创建主面板，垂直布局
         JPanel filePanel = new JPanel();
@@ -270,8 +303,8 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         }
 
         // 如果是图片且有缩略图数据，显示缩略图
-        if (isImage && message.getJson().containsKey("thumbnail_data")) {
-            filePanel.add(createImageThumbnailPanel(message, received, fileName, fileMd5, fileSizeLength));
+        if (isImage && contentJson.containsKey("thumbnail_data")) {
+            filePanel.add(createImageThumbnailPanel(contentJson, fileName));
         } else {
             // 普通文件显示
             filePanel.add(createNormalFilePanel(received, fileName, fileMd5, fileSizeLength));
@@ -283,7 +316,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     /**
      * 创建图片缩略图显示面板
      */
-    protected JPanel createImageThumbnailPanel(Message message, boolean received, String fileName, String fileMd5, int fileSizeLength) {
+    protected JPanel createImageThumbnailPanel(JSONObject contentJson, String fileName) {
         // 使用BoxLayout实现左对齐排列
         JPanel imagePanel = new JPanel();
         imagePanel.setLayout(new BoxLayout(imagePanel, BoxLayout.X_AXIS));
@@ -291,11 +324,11 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
         try {
             // 获取缩略图数据
-            String thumbnailBase64 = message.getJson().getStr("thumbnail_data");
-            int originalWidth = message.getJson().getInt("original_width", 0);
-            int originalHeight = message.getJson().getInt("original_height", 0);
-            int thumbnailWidth = message.getJson().getInt("thumbnail_width", 0);
-            int thumbnailHeight = message.getJson().getInt("thumbnail_height", 0);
+            String thumbnailBase64 = contentJson.getStr("thumbnail_data");
+            int originalWidth = contentJson.getInt("original_width", 0);
+            int originalHeight = contentJson.getInt("original_height", 0);
+            int thumbnailWidth = contentJson.getInt("thumbnail_width", 0);
+            int thumbnailHeight = contentJson.getInt("thumbnail_height", 0);
 
             if (thumbnailBase64 != null && !thumbnailBase64.isEmpty()) {
                 // 解码Base64缩略图数据
@@ -323,7 +356,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
                         @Override
                         public void mouseClicked(java.awt.event.MouseEvent e) {
                             if (e.getClickCount() == 2) {
-                                showImageViewer(message, fileName, originalWidth, originalHeight);
+                                showImageViewer(contentJson, fileName, originalWidth, originalHeight);
                             }
                         }
                     });
@@ -430,7 +463,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     /**
      * 显示图片查看器
      */
-    protected void showImageViewer(Message message, String fileName, int originalWidth, int originalHeight) {
+    protected void showImageViewer(JSONObject contentJson, String fileName, int originalWidth, int originalHeight) {
         // 创建一个图片查看器对话框
         JDialog imageDialog = new JDialog(this, "图片查看 - " + fileName, true);
         imageDialog.setLayout(new BorderLayout());
@@ -476,7 +509,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         controlPanel.add(closeButton);
 
         // 立即开始下载原图
-        downloadOriginalImage(message, imageLabel, scrollPane, loadingPanel, statusLabel, saveButton, fileName, imageDialog);
+        downloadOriginalImage(contentJson, imageLabel, scrollPane, loadingPanel, statusLabel, saveButton, fileName, imageDialog);
 
         // 保存图片的逻辑
         saveButton.addActionListener(e -> saveCurrentImage(imageLabel, fileName, imageDialog));
@@ -492,21 +525,21 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     /**
      * 下载原图（后台执行）
      */
-    protected void downloadOriginalImage(Message message, JLabel imageLabel, JScrollPane scrollPane, JPanel loadingPanel,
-                                       JLabel statusLabel, JButton saveButton, String fileName, JDialog imageDialog) {
+    protected void downloadOriginalImage(JSONObject contentJson, JLabel imageLabel, JScrollPane scrollPane, JPanel loadingPanel,
+                                         JLabel statusLabel, JButton saveButton, String fileName, JDialog imageDialog) {
         final BaseChat friendChatInstance = this;
         // 使用SwingWorker在后台线程中下载文件
         SwingWorker<byte[], Void> worker = new SwingWorker<byte[], Void>() {
             @Override
             protected byte[] doInBackground() {
-                String fileMd5 = message.getJson().getStr("file_md5", "");
+                String fileMd5 = contentJson.getStr("file_md5", "");
                 if (fileMd5.isEmpty()) {
-                    JOptionPane.showMessageDialog(friendChatInstance,"下载失败","无法获取文件MD5",JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(friendChatInstance, "下载失败", "无法获取文件MD5", JOptionPane.ERROR_MESSAGE);
                     return null;
                 }
                 ServiceResponse<byte[]> response = MessageService.getInstance().downloadFileFromServer(fileMd5);
                 if (!response.isSuccess()) {
-                    JOptionPane.showMessageDialog(friendChatInstance,"下载失败",response.getMessage(),JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(friendChatInstance, "下载失败", response.getMessage(), JOptionPane.ERROR_MESSAGE);
                     return null;
                 }
                 return response.getData();
@@ -553,7 +586,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
                     if (result == JOptionPane.YES_OPTION) {
                         // 用户选择显示缩略图
                         ImageIcon thumbnailIcon = ThumbnailGenerator.bytesToImageIcon(
-                                Base64.decode(message.getJson().getStr("thumbnail_data", "")));
+                                Base64.decode(contentJson.getStr("thumbnail_data", "")));
                         if (thumbnailIcon != null) {
                             imageLabel.setIcon(thumbnailIcon);
                             scrollPane.setViewportView(imageLabel);
@@ -815,14 +848,14 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
     /**
      * 高亮当前聊天窗口（从最小化状态恢复并激活）
-     *
+     * <p>
      * 此方法的功能：
      * 1. 如果窗口被最小化，将其恢复正常状态
      * 2. 确保窗口可见
      * 3. 将窗口移到前台
      * 4. 请求窗口获得焦点
      * 5. 让消息输入框获得焦点，方便用户输入
-     *
+     * <p>
      * 使用场景：
      * - 收到新消息时提醒用户
      * - 需要用户关注此聊天窗口时
@@ -872,5 +905,83 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {
         // 释放键事件，暂不需要处理
+    }
+
+    public void updateChatMessages() {
+        // 清空消息显示区域
+        messageArea.setText("");
+        // 检查是否还有更多消息需要加载
+        if (hasMoreMessages()) {
+            showLoadMoreButton();
+        }
+        // 重新显示所有历史消息
+        displayChatHistory();
+
+
+    }
+
+    /**
+     * 显示聊天历史消息
+     */
+    private void displayChatHistory() {
+        chatHistory.forEach((chatMessage) -> {
+            boolean isReceived = !chatMessage.getSenderName().equals(sender.getUserName());
+            appendMessage(chatMessage, isReceived);
+        });
+    }
+
+    /**
+     * 检查是否还有更多消息可以加载
+     * 这里可以根据实际需求实现，比如：
+     * 1. 通过服务器端查询总消息数
+     * 2. 通过本地缓存状态判断
+     * 3. 或者通过某个标志位判断
+     */
+    private boolean hasMoreMessages() {
+        // 假设如果当前显示的消息数量达到pageSize，则认为还有更多消息
+        // 实际实现中可能需要根据服务器返回的总数量来判断
+        return chatHistory.size() >= chatHistoryPageSize && total > chatHistory.size();
+    }
+
+    /**
+     * 显示"加载更多"按钮
+     */
+    private void showLoadMoreButton() {
+        // 创建带边距的面板来容纳按钮
+        JPanel buttonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonContainer.setBackground(new Color(248, 248, 255)); // 淡紫色背景，区分消息
+
+        JButton loadMoreButton = new JButton("加载更多消息");
+        loadMoreButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        loadMoreButton.setBackground(new Color(100, 149, 237));
+        loadMoreButton.setForeground(Color.WHITE);
+        loadMoreButton.setBorderPainted(false);
+        loadMoreButton.setFocusPainted(false);
+        loadMoreButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        loadMoreButton.setPreferredSize(new Dimension(150, 30));
+
+        // 添加点击事件 - 重新调用loadMessageFromHistory获取更多消息
+        loadMoreButton.addActionListener(e -> {
+            // 移除加载更多按钮
+            buttonContainer.remove(loadMoreButton);
+            // 重新加载历史消息（loadMessageFromHistory已经实现了获取逻辑）
+            loadMessageFromHistory();
+            updateChatMessages();
+        });
+        buttonContainer.add(loadMoreButton);
+        // 在消息区域顶部插入按钮容器
+        messageArea.insertComponent(buttonContainer);
+        // 在按钮后面添加换行符（重要！）
+        appendChangeLine();
+    }
+
+    /**
+     * 刷新聊天消息（供外部调用）
+     */
+    public void refreshChatMessages() {
+        // 在Swing事件线程中执行
+        SwingUtilities.invokeLater(() -> {
+            updateChatMessages();
+        });
     }
 }

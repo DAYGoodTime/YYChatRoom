@@ -19,7 +19,7 @@ public class ImageIconUtil {
 
     public static ImageIcon getDefaultIcon() {
         try {
-            return new ImageIcon(Constant.DEFAULT_AVATAR_PATH + Constant.DEFAULT_AVATAR);
+            return new ImageIcon(Constant.DEFAULT_AVATAR);
         } catch (Exception e) {
             System.err.println("无法加载默认图标");
             return new ImageIcon(); // 返回空图标

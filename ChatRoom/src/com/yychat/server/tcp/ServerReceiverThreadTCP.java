@@ -7,6 +7,7 @@ import com.yychat.common.model.MessageType;
 import com.yychat.common.model.SystemUser;
 import com.yychat.server.service.FileManager;
 import com.yychat.server.tcp.handler.GroupRequestHandler;
+import com.yychat.server.tcp.handler.UserRequestHandler;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -87,6 +88,12 @@ public class ServerReceiverThreadTCP implements Runnable {
                     break;
                 case MessageType.TCP_GROUP_SAVE:
                     response = GroupRequestHandler.handelGroupSaveRequest(message);
+                    break;
+                case MessageType.TCP_USER_MESSAGE_REQUEST:
+                    response = UserRequestHandler.handelUserMessageHistoryRequest(message);
+                    break;
+                case MessageType.TCP_GROUP_MESSAGE_REQUEST:
+                    response = GroupRequestHandler.handelGroupMessageHistoryRequest(message);
                     break;
                 case MessageType.TCP_ACK:
                     response = message.setSender(message.getReceiver()).setReceiver(message.getSender());

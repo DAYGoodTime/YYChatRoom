@@ -194,7 +194,7 @@ public class MyInfo extends JFrame {
             avatarLabel.setIcon(new ImageIcon(scaledImage));
             avatarLabel.setText(""); // 清除可能存在的文本
         } catch (Exception e) {
-            avatarLabel.setIcon(new ImageIcon(Constant.DEFAULT_AVATAR_PATH + Constant.DEFAULT_AVATAR));
+            avatarLabel.setIcon(new ImageIcon(Constant.DEFAULT_AVATAR));
             avatarLabel.setText("头像\n加载失败");
             System.err.println("[MyInfo]无法加载头像: " + avatarPath);
         }

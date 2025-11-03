@@ -38,9 +38,8 @@ public class User implements Serializable {
     public User(String name, String password) {
         this.userName = name;
         this.password = password;
-        this.avatarPath = "0.jpg"; // 默认头像
+        this.avatarPath = Constant.DEFAULT_AVATAR; // 默认头像
     }
-
     public User(String name, String password, String avatarPath) {
         this.userName = name;
         this.password = password;

@@ -35,7 +35,7 @@ create table message
         primary key,
     sender   varchar(20)  null,
     receiver varchar(20)  null,
-    content  varchar(255) null,
+    content  longtext null,
     sendtime datetime     null on update CURRENT_TIMESTAMP
 )
     charset = utf8mb3;

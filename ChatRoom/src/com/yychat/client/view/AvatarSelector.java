@@ -20,7 +20,6 @@ public class AvatarSelector extends JDialog {
     private JButton cancelButton;
     private JButton uploadButton;
     private JPanel defaultAvatarsPanel;
-    private MainWindow mainWindow;
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     // 默认头像文件名
     private static final String[] DEFAULT_AVATARS = {
@@ -30,7 +29,6 @@ public class AvatarSelector extends JDialog {
 
     public AvatarSelector(Frame parent) {
         super(parent, "选择头像", true);
-        this.mainWindow = ClientMain.getMainWindow();
         this.parent = (MyInfo) parent;
         initializeComponents();
         layoutComponents();

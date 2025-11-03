@@ -277,13 +277,14 @@ public class TCPClient {
      * 带重试的连接机制
      */
     private boolean reconnectWithRetry(int maxRetries) {
+        connected = false;
         for (int i = 0; i < maxRetries; i++) {
-            if (connect()) {
-                return true;
-            }
             // 指数退避：1s, 2s, 4s...
             try {
                 Thread.sleep((1 << i) * 1000);
+                if (connect()) {
+                    return true;
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -354,9 +355,9 @@ public class TCPClient {
      * 连接健康检查和自动重连
      */
     private void checkConnectionHealth() {
-        if (!isConnected()) {
-            System.out.println("检测到连接断开，尝试重连...");
-            reconnectWithRetry(3);
+        System.out.println("检测到连接断开，尝试重连...");
+        if(reconnectWithRetry(3)){
+            System.out.println("重连成功");
         }
     }
 

@@ -5,6 +5,7 @@ import cn.hutool.json.JSONObject;
 import com.yychat.common.model.*;
 import com.yychat.server.service.AvatarFileManager;
 import com.yychat.server.service.GroupService;
+import com.yychat.server.util.DBUtil;
 
 public class GroupRequestHandler {
 
@@ -55,6 +56,20 @@ public class GroupRequestHandler {
         return response;
     }
 
+    public static Message handelGroupMessageHistoryRequest(Message request) {
+        if (request.isJsonMessage()) {
+            return logError("消息格式错误", request);
+        }
+        int groupId = request.getJson().getInt("group_id", -1);
+        int index = request.getJson().getInt("index", 0);
+        int pageSize = request.getJson().getInt("page_size", 20);
+        Page<ChatMessage> page = DBUtil.getGroupMessageHistoryPage(groupId, index, pageSize);
+        return Message.builder()
+                .setMessageType(request.getMessageType())
+                .setSender(SystemUser.Server.getStr())
+                .setReceiver(request.getSender())
+                .setJsonMessage(new JSONObject().set("page",page));
+    }
 
     private static Message logError(String message, Message request) {
         Message response = Message.builder()

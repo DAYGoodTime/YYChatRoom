@@ -43,7 +43,7 @@ public class GroupService {
             }
 
             // 使用默认头像路径
-            String groupAvatarPath = avatarPath != null ? avatarPath : Constant.DEFAULT_AVATAR_FULL_PATH;
+            String groupAvatarPath = avatarPath != null ? avatarPath : Constant.DEFAULT_AVATAR;
 
             // 创建群组对象
             Group group = new Group();

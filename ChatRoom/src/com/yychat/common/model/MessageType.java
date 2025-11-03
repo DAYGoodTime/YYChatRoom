@@ -41,7 +41,7 @@ public interface MessageType {
     String GROUP_SEARCH_REQUEST = "40";     // 搜索群组
     String GROUP_SEARCH_RESPONSE = "41";    // 搜索群组响应
 
-    // 群组聊天消息 (已有但未实现)
+    // 群组聊天消息
     String GROUP_CHAT_MESSAGE = "12";       // 群组聊天消息
     String GROUP_CHAT_MESSAGE_RESPONSE = "42"; // 群组聊天消息响应
 
@@ -52,5 +52,6 @@ public interface MessageType {
     String TCP_HEARTBEAT = "103"; // TCP心跳消息
     String TCP_HEARTBEAT_ACK = "104"; // TCP心跳响应
     String TCP_GROUP_SAVE = "120"; // 保存群组请求(更新信息或创建群组)
-
+    String TCP_USER_MESSAGE_REQUEST = "121"; //获取用户历史聊天记录
+    String TCP_GROUP_MESSAGE_REQUEST = "122";//获取群组历史聊天记录
 }

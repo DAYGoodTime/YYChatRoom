@@ -1,6 +1,5 @@
 package com.yychat.client.view.listpanel;
 
-import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.GroupService;
 import com.yychat.client.util.ImageIconUtil;
@@ -394,7 +393,7 @@ public class GroupListPanel extends JPanel {
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         // 默认使用系统头像
-        selectedGroupAvatarPath = Constant.DEFAULT_AVATAR_FULL_PATH;
+        selectedGroupAvatarPath = Constant.DEFAULT_AVATAR;
         loadAvatarPreview(avatarPreviewLabel, selectedGroupAvatarPath);
 
         // 头像选择按钮事件

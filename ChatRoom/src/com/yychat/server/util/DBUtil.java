@@ -1,10 +1,7 @@
 package com.yychat.server.util;
 
-import com.yychat.common.model.FriendType;
-import com.yychat.common.model.Group;
-import com.yychat.common.model.GroupMember;
-import com.yychat.common.model.Message;
-import com.yychat.common.model.User;
+import cn.hutool.json.JSONUtil;
+import com.yychat.common.model.*;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -12,6 +9,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("CallToPrintStackTrace")
 public class DBUtil {
     private static final String db_url = "jdbc:mysql://localhost:3306/yychat2022s?useUnicode=true&characterEncoding=utf-8";
     private static final String db_user = "root";
@@ -60,7 +58,7 @@ public class DBUtil {
         return hasUser;
     }
 
-    //添加新用户（支持头像路径）
+    //添加新用户
     public static boolean addNewUser(User user) {
         int result = -1;
         String insert = "insert into user(username,password,avatar_path) values(?,?,?)";
@@ -113,7 +111,7 @@ public class DBUtil {
             statement.setString(2, userName);
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
-                result.add(new  User(rs.getString(1),null, rs.getString(2)));
+                result.add(new User(rs.getString(1), null, rs.getString(2)));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -156,22 +154,29 @@ public class DBUtil {
         return count;
     }
 
-    public static boolean insertChatMessage(String from, String to, String content, LocalDateTime time) {
-        boolean result = false;
+    public static long insertChatMessage(String from, String to, String content, LocalDateTime time) {
         String query = "insert into message(sender,receiver,content,sendtime) values(?,?,?,?)";
         PreparedStatement statement = null;
         try {
-            statement = dataBase.prepareStatement(query);
+            statement = dataBase.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, from);
             statement.setString(2, to);
             statement.setString(3, content);
             statement.setTimestamp(4, new Timestamp(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
-            result = (statement.executeUpdate() > 0);
+            boolean result = (statement.executeUpdate() > 0);
+            if (!result) return -1L;
+            ResultSet rs = statement.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+            return -1;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return result;
+
+        return -1L;
     }
+
 
     /**
      * 更新用户头像路径
@@ -202,7 +207,7 @@ public class DBUtil {
      * @return 头像路径，如果用户不存在返回默认头像
      */
     public static String getUserAvatar(String userName) {
-        String avatarPath = "0.jpg"; // 默认头像
+        String avatarPath = null;
         String query = "SELECT avatar_path FROM user WHERE username=?";
         PreparedStatement statement = null;
         try {
@@ -211,13 +216,14 @@ public class DBUtil {
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
                 avatarPath = rs.getString("avatar_path");
-                if (avatarPath == null || avatarPath.trim().isEmpty()) {
-                    avatarPath = "0.jpg"; // 如果数据库中为空，返回默认头像
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (avatarPath == null || avatarPath.trim().isEmpty()) {
+            avatarPath = Constant.DEFAULT_AVATAR; // 如果数据库中为空，返回默认头像
+        }
+
         return avatarPath;
     }
 
@@ -239,21 +245,13 @@ public class DBUtil {
                 user = new User();
                 user.setUserName(rs.getString("username"));
                 String avatarPath = rs.getString("avatar_path");
-                if (avatarPath != null && !avatarPath.trim().isEmpty()) {
-                    user.setAvatarPath(avatarPath);
-                } else {
-                    user.setAvatarPath("0.jpg"); // 默认头像
-                }
+                user.setAvatarPath(avatarPath);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return user;
     }
-
-    // ================================
-    // 群组管理相关方法
-    // ================================
 
     /**
      * 创建群组
@@ -391,6 +389,7 @@ public class DBUtil {
         }
         return group;
     }
+
     /**
      * 根据群组ID获取群组信息
      *
@@ -420,6 +419,7 @@ public class DBUtil {
         }
         return group;
     }
+
     /**
      * 更新群组信息
      *
@@ -502,9 +502,9 @@ public class DBUtil {
     /**
      * 添加群组成员
      *
-     * @param groupId 群组ID
+     * @param groupId  群组ID
      * @param username 用户名
-     * @param role 角色（默认为member）
+     * @param role     角色（默认为member）
      * @return 添加是否成功
      */
     public static boolean addGroupMember(int groupId, String username, String role) {
@@ -532,7 +532,7 @@ public class DBUtil {
     /**
      * 移除群组成员
      *
-     * @param groupId 群组ID
+     * @param groupId  群组ID
      * @param username 用户名
      * @return 移除是否成功
      */
@@ -584,7 +584,7 @@ public class DBUtil {
     /**
      * 检查用户是否为群组成员
      *
-     * @param groupId 群组ID
+     * @param groupId  群组ID
      * @param username 用户名
      * @return 是否为成员
      */
@@ -652,42 +652,17 @@ public class DBUtil {
     }
 
     /**
-     * 获取群组创建时间
-     *
-     * @param groupId 群组ID
-     * @return 创建时间
-     */
-    public static LocalDateTime getGroupCreateTime(int groupId) {
-        LocalDateTime createTime = LocalDateTime.now();
-        String query = "SELECT join_time FROM group_members WHERE group_id = ? AND role = ?";
-        PreparedStatement statement = null;
-        try {
-            statement = dataBase.prepareStatement(query);
-            statement.setInt(1, groupId);
-            statement.setString(2, GroupMember.ROLE_OWNER);
-            ResultSet rs = statement.executeQuery();
-            if (rs.next()) {
-                createTime = rs.getTimestamp("join_time").toLocalDateTime();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return createTime;
-    }
-
-    /**
      * 保存群组消息
      *
      * @param message 消息对象
      * @param groupId 群组ID
      * @return 保存是否成功
      */
-    public static boolean saveGroupMessage(Message message, int groupId) {
-        boolean result = false;
+    public static long saveGroupMessage(Message message, int groupId) {
         String insert = "INSERT INTO group_messages(sender_name, group_id, content, time) VALUES(?,?,?,?)";
         PreparedStatement statement = null;
         try {
-            statement = dataBase.prepareStatement(insert);
+            statement = dataBase.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, message.getSender());
             statement.setInt(2, groupId);
             // 如果是JSON消息，保存JSON内容；否则保存普通文本内容
@@ -697,48 +672,17 @@ public class DBUtil {
                 statement.setString(3, message.getContent());
             }
             statement.setTimestamp(4, new Timestamp(message.getTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
-            result = (statement.executeUpdate() > 0);
+            boolean result = (statement.executeUpdate() > 0);
+            if (!result) return -1L;
+            ResultSet rs = statement.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+            return -1;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return result;
-    }
-
-    /**
-     * 获取群组消息历史
-     *
-     * @param groupId 群组ID
-     * @param limit 返回消息数量限制
-     * @return 消息列表
-     */
-    public static List<Message> getGroupMessageHistory(int groupId, int limit) {
-        List<Message> messages = new ArrayList<>();
-        String query = "SELECT sender_name, content, time FROM group_messages WHERE group_id = ? ORDER BY time DESC LIMIT ?";
-        PreparedStatement statement = null;
-        try {
-            statement = dataBase.prepareStatement(query);
-            statement.setInt(1, groupId);
-            statement.setInt(2, limit);
-            ResultSet rs = statement.executeQuery();
-
-            // 从最新消息开始，需要反转顺序
-            List<Message> tempList = new ArrayList<>();
-            while (rs.next()) {
-                Message message = Message.builder()
-                .setSender(rs.getString("sender_name"))
-                .setContent(rs.getString("content"))
-                .setTime(rs.getTimestamp("time").toLocalDateTime());
-                tempList.add(message);
-            }
-
-            // 反转列表，按时间正序返回
-            for (int i = tempList.size() - 1; i >= 0; i--) {
-                messages.add(tempList.get(i));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return messages;
+        return -1L;
     }
 
     /**
@@ -778,11 +722,150 @@ public class DBUtil {
     }
 
     /**
+     * 获取好友消息历史记录（分页）
+     *
+     * @param user1    用户1
+     * @param user2    用户2
+     * @param pageSize 每页大小
+     * @param index    页码（从1开始）
+     * @return 分页的好友消息历史
+     */
+    public static Page<ChatMessage> getPrivateMessageHistory(String user1, String user2, int index, int pageSize) {
+        Page<ChatMessage> page = new Page<>(pageSize, index);
+        List<ChatMessage> messages = new ArrayList<>();
+
+        // 计算偏移量
+        int offset = (index - 1) * pageSize;
+
+        // 查询消息总数
+        String countQuery = "SELECT COUNT(*) as total FROM message WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?)";
+        long total = 0;
+        PreparedStatement countStmt = null;
+        try {
+            countStmt = dataBase.prepareStatement(countQuery);
+            countStmt.setString(1, user1);
+            countStmt.setString(2, user2);
+            countStmt.setString(3, user2);
+            countStmt.setString(4, user1);
+            ResultSet countRs = countStmt.executeQuery();
+            if (countRs.next()) {
+                total = countRs.getLong("total");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 查询分页消息数据（按时间正序）
+        String query = "SELECT id, sender, receiver, content, sendtime FROM message WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?) ORDER BY sendtime DESC LIMIT ? OFFSET ?";
+        PreparedStatement statement = null;
+        try {
+            statement = dataBase.prepareStatement(query);
+            statement.setString(1, user1);
+            statement.setString(2, user2);
+            statement.setString(3, user2);
+            statement.setString(4, user1);
+            statement.setInt(5, pageSize);
+            statement.setInt(6, offset);
+            ResultSet rs = statement.executeQuery();
+
+            // 直接按正序添加
+            while (rs.next()) {
+                ChatMessage message = new ChatMessage(
+                        rs.getLong("id"),
+                        rs.getString("sender"),
+                        rs.getString("receiver"),
+                        JSONUtil.parseObj(rs.getString("content")),
+                        rs.getTimestamp("sendtime").toLocalDateTime()
+                );
+                messages.add(message);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (countStmt != null) {
+                try {
+                    countStmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return page.setTotal(total).setList(messages);
+    }
+
+    /**
+     * 获取群组消息历史记录（分页）
+     *
+     * @param groupId  群组ID
+     * @param pageSize 每页大小
+     * @param index    页码（从1开始）
+     * @return 分页的群组消息历史
+     */
+    public static Page<ChatMessage> getGroupMessageHistoryPage(int groupId, int index, int pageSize) {
+        Page<ChatMessage> page = new Page<>(pageSize, index);
+        List<ChatMessage> messages = new ArrayList<>();
+
+        // 计算偏移量
+        int offset = (index - 1) * pageSize;
+
+        // 查询消息总数
+        String countQuery = "SELECT COUNT(*) as total FROM group_messages WHERE group_id = ?";
+        long total = 0;
+        PreparedStatement countStmt = null;
+        try {
+            countStmt = dataBase.prepareStatement(countQuery);
+            countStmt.setInt(1, groupId);
+            ResultSet countRs = countStmt.executeQuery();
+            if (countRs.next()) {
+                total = countRs.getLong("total");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 查询分页消息数据（按时间正序）
+        String query = "SELECT id, sender_name, content, time FROM group_messages WHERE group_id = ? ORDER BY time DESC LIMIT ? OFFSET ?";
+        PreparedStatement statement = null;
+        try {
+            statement = dataBase.prepareStatement(query);
+            statement.setInt(1, groupId);
+            statement.setInt(2, pageSize);
+            statement.setInt(3, offset);
+            ResultSet rs = statement.executeQuery();
+
+            // 直接按正序添加
+            while (rs.next()) {
+                ChatMessage message = new ChatMessage(
+                        rs.getLong("id"),
+                        rs.getString("sender_name"),
+                        String.valueOf(groupId), // 群组ID作为receiver
+                        JSONUtil.parseObj(rs.getString("content")),
+                        rs.getTimestamp("time").toLocalDateTime()
+                );
+                messages.add(message);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (countStmt != null) {
+                try {
+                    countStmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return page.setTotal(total).setList(messages);
+    }
+
+    /**
      * 更新群组成员角色
      *
-     * @param groupId 群组ID
+     * @param groupId  群组ID
      * @param username 用户名
-     * @param newRole 新角色
+     * @param newRole  新角色
      * @return 更新是否成功
      */
     public static boolean updateMemberRole(int groupId, String username, String newRole) {

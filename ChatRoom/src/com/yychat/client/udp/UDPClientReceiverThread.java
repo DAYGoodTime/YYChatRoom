@@ -98,9 +98,6 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.REQUEST_UNK_USER_LIST:
                         UserServiceHandler.handelUnknownFriendsResponse(message);
                         break;
-                    case MessageType.GROUP_CHAT_MESSAGE_RESPONSE:
-                        GroupServiceHandler.handleGroupChatMessageResponse(message);
-                        break;
                     case MessageType.GROUP_JOIN:
                         GroupServiceHandler.handleJoinGroupResponse(message);
                         break;
