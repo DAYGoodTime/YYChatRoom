@@ -318,30 +318,15 @@ public class GroupService {
             }
 
             // 权限检查：群主可以移除任何人，管理员可以移除普通成员
-            List<GroupMember> members = DBUtil.getGroupMembers(groupId);
-            GroupMember remover = members.stream()
-                    .filter(m -> removerUsername.equals(m.getUsername()))
-                    .findFirst()
-                    .orElse(null);
-
-            GroupMember target = members.stream()
-                    .filter(m -> targetUsername.equals(m.getUsername()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (remover == null) {
-                return serviceResponse.error("您不是群组成员");
+            Optional<GroupMember> remover = DBUtil.getGroupMember(groupId, removerUsername);
+            Optional<GroupMember> target = DBUtil.getGroupMember(groupId, targetUsername);
+            if (!remover.isPresent() || !target.isPresent()) {
+                return serviceResponse.error("您不是群组成员 或 目标用户不是群组成员");
             }
-
-            if (target == null) {
-                return serviceResponse.error("目标用户不是群组成员");
-            }
-
             // 权限检查
-            if (!remover.canRemoveMember(targetUsername)) {
+            if (!remover.get().canRemoveMember(targetUsername)) {
                 return serviceResponse.error("权限不足，无法移除该成员");
             }
-
             // 移除群组成员
             boolean success = DBUtil.removeGroupMember(groupId, targetUsername);
             if (success) {
@@ -398,6 +383,57 @@ public class GroupService {
                 return serviceResponse.success("群主身份转让成功");
             } else {
                 return serviceResponse.error("群主身份转让失败");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return serviceResponse.error("服务器异常: " + e.getLocalizedMessage());
+        }
+    }
+
+    /**
+     * 设置群管理员
+     */
+    public ServiceResponse<?> setGroupMemberAdmin(int groupId, String currentUser, String targetUser, Boolean isAdmin) {
+        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
+        try {
+            // 参数验证
+            if (groupId <= 0) {
+                return serviceResponse.error("群组ID无效");
+            }
+            if (isAdmin == null) {
+                //什么都不做
+                return serviceResponse.success(null);
+            }
+
+            if (currentUser == null || currentUser.trim().isEmpty()) {
+                return serviceResponse.error("请求用户名不能为空");
+            }
+
+            if (targetUser == null || targetUser.trim().isEmpty()) {
+                return serviceResponse.error("目标用户名不能为空");
+            }
+
+            // 检查群组是否存在
+            Group group = DBUtil.getGroupById(groupId);
+            if (group == null) {
+                return serviceResponse.error("群组不存在");
+            }
+
+            // 权限检查：只有管理员可以转让
+            if (!isGroupAdmin(groupId, currentUser)) {
+                return serviceResponse.error("权限不足");
+            }
+            // 检查目标是否为成员
+            if (!DBUtil.isGroupMember(groupId, targetUser)) {
+                return serviceResponse.error("目标必须是群组成员");
+            }
+            // 更新角色
+            boolean success = DBUtil.updateMemberRole(groupId, targetUser, isAdmin ? GroupMember.ROLE_ADMIN : GroupMember.ROLE_OWNER);
+
+            if (success) {
+                return serviceResponse.success(null);
+            } else {
+                return serviceResponse.error("更新权限失败");
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -36,15 +36,17 @@ public class GroupChatPanel extends BaseChatPanel {
     private DefaultListModel<GroupMember> memberListModel;
     private GroupChat parentFrame;
 
-    public GroupChatPanel(User sender,GroupChat parentFrame) {
+    public GroupChatPanel(User sender, GroupChat parentFrame) {
         super(sender, parentFrame);
         this.parentFrame = parentFrame;
         initGroupLayout();
     }
-    protected Group getGroup(){
+
+    protected Group getGroup() {
         return parentFrame.getGroup();
     }
-    protected void setGroup(Group group){
+
+    protected void setGroup(Group group) {
         parentFrame.setGroup(group);
     }
 
@@ -388,10 +390,10 @@ public class GroupChatPanel extends BaseChatPanel {
         if (dialog.isConfirmed()) {
             String newGroupName = dialog.getGroupName();
             String newAvatarPath = dialog.getAvatarPath();
-            Group newGroup = new Group(getGroup().getGroupId(),newGroupName,newAvatarPath,getGroup().getCreatorUsername());
+            Group newGroup = new Group(getGroup().getGroupId(), newGroupName, newAvatarPath, getGroup().getCreatorUsername());
             // 更新群组信息
             ServiceResponse<Group> response = GroupService.getInstance()
-                    .updateGroupInfo(newGroup,ClientMain.getCurrentUserName());
+                    .updateGroupInfo(newGroup, ClientMain.getCurrentUserName());
             if (response.isSuccess()) {
                 groupNameLabel.setText(newGroupName);
                 setGroup(newGroup);
@@ -428,25 +430,32 @@ public class GroupChatPanel extends BaseChatPanel {
     }
 
     private void addFriend(String username) {
-//        Message message = Message.builder()
-//                .setMessageType(MessageType.USER_ADD_NEW_FRIEND)
-//                .setSender(sender.getUserName())
-//                .setContent(username)
-//                .build();
-//
-//        ClientMain.getUDPConnection().sendMessageToServer(message);
+        ClientMain.getUDPConnection().sendMessageToServer(
+                Message.builder()
+                        .setMessageType(Message.USER_ADD_NEW_FRIEND)
+                        .setSender(ClientMain.getCurrentUser().getUserName())
+                        .setContent(username));
         JOptionPane.showMessageDialog(this, "已发送好友申请", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void setMemberAsAdmin(String username) {
-        // TODO: 需要在服务器端实现设为管理员的接口
-        // 临时显示功能待实现提示
-        JOptionPane.showMessageDialog(this, "设为管理员功能需要服务器端支持", "提示", JOptionPane.INFORMATION_MESSAGE);
+        ServiceResponse<String> response = GroupService.getInstance().setGroupMemberIsAdmin(getGroup().getGroupId(), username, true);
+        if (!response.isSuccess()) {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "设置管理员失败", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        loadGroupMembers();
+        JOptionPane.showMessageDialog(this, "设置管理员成功", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void removeMemberFromAdmin(String username) {
-        // TODO: 需要在服务器端实现取消管理员的接口
-        JOptionPane.showMessageDialog(this, "取消管理员功能需要服务器端支持", "提示", JOptionPane.INFORMATION_MESSAGE);
+        ServiceResponse<String> response = GroupService.getInstance().setGroupMemberIsAdmin(getGroup().getGroupId(), username, false);
+        if (!response.isSuccess()) {
+            JOptionPane.showMessageDialog(this, response.getMessage(), "移除管理员失败", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        loadGroupMembers();
+        JOptionPane.showMessageDialog(this, "移除管理员成功", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void removeMemberFromGroup(String username) {

@@ -10,6 +10,8 @@ import com.yychat.server.view.StartServer;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 服务器端群组消息处理器
@@ -55,10 +57,10 @@ public class GroupServiceHandler {
             int groupId = requestData.getInt("group_id", 0);
             String username = requestData.getStr("username", "");
             ServiceResponse<String> response = groupService.leaveGroup(groupId, username);
-            buildResponseMessage(response, MessageType.GROUP_LEAVE_RESPONSE, message.getSender(), message);
+            buildResponseMessage(response, MessageType.GROUP_USER_LEAVE, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
-            sendErrorResponse(message, MessageType.GROUP_LEAVE_RESPONSE, "处理退出群组请求异常: " + e.getMessage());
+            sendErrorResponse(message, MessageType.GROUP_USER_LEAVE, "处理退出群组请求异常: " + e.getMessage());
         }
     }
 
@@ -135,6 +137,25 @@ public class GroupServiceHandler {
     }
 
     /**
+     * 处理设置群管理员请求
+     */
+    public void handleSetGroupMemberIsAdminRequest(Message message) {
+        try {
+            JSONObject requestData = message.getJson();
+            int groupId = requestData.getInt("group_id", 0);
+            String currentUser = requestData.getStr("current_user", "");
+            String targetUser = requestData.getStr("target_user", "");
+            Boolean admin = requestData.getBool("is_admin", null);
+
+            ServiceResponse<?> response = groupService.setGroupMemberAdmin(groupId, currentUser, targetUser,admin);
+            buildResponseMessage(response, MessageType.GROUP_SET_ADMIN, message.getSender(), message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendErrorResponse(message, MessageType.GROUP_SET_ADMIN, "处理转让群主请求异常: " + e.getMessage());
+        }
+    }
+
+    /**
      * 处理获取群组成员列表请求
      */
     public void handleGroupMembersRequest(Message message) {
@@ -142,8 +163,14 @@ public class GroupServiceHandler {
             JSONObject requestData = message.getJson();
             int groupId = requestData.getInt("group_id", 0);
             String requesterUsername = requestData.getStr("requester_username", "");
-
             ServiceResponse<List<GroupMember>> response = groupService.getGroupMembers(groupId, requesterUsername);
+            if(response.isSuccess()){
+                Set<String> onlineUsers = StartServer.getUDPServer().getUserAddressMap().keySet();
+                List<GroupMember> list = response.getData().stream()
+                        .peek(u -> u.setIsOnline(onlineUsers.contains(u.getUsername())))
+                        .collect(Collectors.toList());
+                response = new ServiceResponse<>(list);
+            }
             buildResponseMessage(response, MessageType.GROUP_MEMBERS, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
@@ -176,10 +203,10 @@ public class GroupServiceHandler {
             String keyword = requestData.getStr("keyword", "");
 
             ServiceResponse<List<Group>> response = groupService.searchGroups(keyword);
-            buildResponseMessage(response, MessageType.GROUP_SEARCH_RESPONSE, message.getSender(), message);
+            buildResponseMessage(response, MessageType.GROUP_SEARCH, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
-            sendErrorResponse(message, MessageType.GROUP_SEARCH_RESPONSE, "处理搜索群组请求异常: " + e.getMessage());
+            sendErrorResponse(message, MessageType.GROUP_SEARCH, "处理搜索群组请求异常: " + e.getMessage());
         }
     }
 

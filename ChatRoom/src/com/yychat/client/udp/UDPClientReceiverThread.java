@@ -101,7 +101,7 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.GROUP_JOIN:
                         GroupServiceHandler.handleJoinGroupResponse(message);
                         break;
-                    case MessageType.GROUP_LEAVE_RESPONSE:
+                    case MessageType.GROUP_USER_LEAVE:
                         GroupServiceHandler.handleLeaveGroupResponse(message);
                         break;
                     case MessageType.GROUP_DELETE_RESPONSE:
@@ -122,7 +122,7 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.USER_GROUPS:
                         GroupServiceHandler.handleUserGroupsResponse(message);
                         break;
-                    case MessageType.GROUP_SEARCH_RESPONSE:
+                    case MessageType.GROUP_SEARCH:
                         GroupServiceHandler.handleGroupSearchResponse(message);
                         break;
 

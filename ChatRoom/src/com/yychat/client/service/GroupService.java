@@ -134,7 +134,7 @@ public class GroupService {
             requestData.set("username", currentUsername);
 
             Message message = Message.builder()
-                    .setMessageType(MessageType.GROUP_LEAVE_REQUEST)
+                    .setMessageType(MessageType.GROUP_USER_LEAVE)
                     .setSender(currentUsername)
                     .setJsonMessage(requestData);
 
@@ -143,7 +143,7 @@ public class GroupService {
                 return serviceResponse.error("服务器失联!");
             }
 
-            if (!MessageType.GROUP_LEAVE_RESPONSE.equals(response.getMessageType()) ||
+            if (!MessageType.GROUP_USER_LEAVE.equals(response.getMessageType()) ||
                     !response.getJson().getBool("success", false)) {
                 return serviceResponse.error(response.getJson().getStr("message", "退出群组失败"));
             }
@@ -244,51 +244,6 @@ public class GroupService {
     }
 
     /**
-     * 添加群组成员
-     */
-    public ServiceResponse<String> addMember(int groupId, String targetUsername) {
-        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
-        try {
-            // 参数验证
-            if (groupId <= 0) {
-                return serviceResponse.error("群组ID无效");
-            }
-
-            if (StrUtil.isEmpty(targetUsername)) {
-                return serviceResponse.error("目标用户名不能为空");
-            }
-
-            UDPClientConnection conn = getConnection();
-            String currentUsername = ClientMain.getCurrentUserName();
-
-            JSONObject requestData = new JSONObject();
-            requestData.set("group_id", groupId);
-            requestData.set("adder_username", currentUsername);
-            requestData.set("target_username", targetUsername);
-
-            Message message = Message.builder()
-                    .setMessageType(MessageType.GROUP_ADD_MEMBER)
-                    .setSender(currentUsername)
-                    .setJsonMessage(requestData);
-
-            Message response = conn.sendMessageToServerSync(message);
-            if (response == null) {
-                return serviceResponse.error("服务器失联!");
-            }
-
-            if (!MessageType.GROUP_ADD_MEMBER_RESPONSE.equals(response.getMessageType()) ||
-                    !response.getJson().getBool("success", false)) {
-                return serviceResponse.error(response.getJson().getStr("message", "添加成员失败"));
-            }
-
-            return serviceResponse.success("成功添加成员: " + targetUsername);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return serviceResponse.error("服务器异常: " + e.getMessage());
-        }
-    }
-
-    /**
      * 移除群组成员
      */
     public ServiceResponse<String> removeMember(int groupId, String targetUsername) {
@@ -377,6 +332,49 @@ public class GroupService {
         }
     }
 
+
+    /**
+     * 设置成员是否为管理员
+     */
+    public ServiceResponse<String> setGroupMemberIsAdmin(int groupId, String targetUser,boolean isAdmin) {
+        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
+        try {
+            // 参数验证
+            if (groupId <= 0) {
+                return serviceResponse.error("群组ID无效");
+            }
+
+            if (StrUtil.isEmpty(targetUser)) {
+                return serviceResponse.error("目标用户名不能为空");
+            }
+
+            UDPClientConnection conn = getConnection();
+            String currentUsername = ClientMain.getCurrentUserName();
+
+            JSONObject requestData = new JSONObject();
+            requestData.set("group_id", groupId);
+            requestData.set("current_user", currentUsername);
+            requestData.set("target_user", targetUser);
+            requestData.set("is_admin", isAdmin);
+
+            Message message = Message.builder()
+                    .setMessageType(MessageType.GROUP_SET_ADMIN)
+                    .setSender(currentUsername)
+                    .setJsonMessage(requestData);
+
+            Message response = conn.sendMessageToServerSync(message);
+            if (response == null) {
+                return serviceResponse.error("服务器失联!");
+            }
+            if (!response.getJson().getBool("success", false)) {
+                return serviceResponse.error(response.getJson().getStr("message", "转让群主身份失败"));
+            }
+            return serviceResponse.success(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return serviceResponse.error("服务器异常: " + e.getMessage());
+        }
+    }
 
     /**
      * 获取群组成员列表
@@ -478,7 +476,7 @@ public class GroupService {
             requestData.set("keyword", keyword.trim());
 
             Message message = Message.builder()
-                    .setMessageType(MessageType.GROUP_SEARCH_REQUEST)
+                    .setMessageType(MessageType.GROUP_SEARCH)
                     .setSender(currentUsername)
                     .setJsonMessage(requestData);
 
@@ -487,7 +485,7 @@ public class GroupService {
                 return serviceResponse.error("服务器失联!");
             }
 
-            if (!MessageType.GROUP_SEARCH_RESPONSE.equals(response.getMessageType()) ||
+            if (!MessageType.GROUP_SEARCH.equals(response.getMessageType()) ||
                     !response.getJson().getBool("success", false)) {
                 return serviceResponse.error(response.getJson().getStr("message", "搜索群组失败"));
             }
