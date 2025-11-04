@@ -5,6 +5,7 @@ import com.yychat.common.model.GroupMember;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.MessageType;
 import com.yychat.server.util.DBUtil;
+import com.yychat.server.view.StartServer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,7 +31,6 @@ public class YYChatUDPServer implements Runnable {
     private DatagramSocket datagramSocket;
     private volatile boolean isRunning = false;
     private Thread serverThread;
-    private static final int PORT = 5678;
 
     public void startServer() {
         if (isRunning) {
@@ -41,9 +41,7 @@ public class YYChatUDPServer implements Runnable {
         serverThread = new Thread(this);
         serverThread.start();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            stopServer();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stopServer));
     }
 
     public void stopServer() {
@@ -69,8 +67,9 @@ public class YYChatUDPServer implements Runnable {
     @Override
     public void run() {
         try {
-            datagramSocket = new DatagramSocket(PORT);
-            System.out.println("服务器启动成功，正在监听" + PORT + "端口...");
+            int port = StartServer.getServerConfig().getServer_port_udp();
+            datagramSocket = new DatagramSocket(port);
+            System.out.println("服务器启动成功，正在监听" + port + "端口...");
 
             while (isRunning) {
                 try {

@@ -1,5 +1,7 @@
 package com.yychat.server.tcp;
 
+import com.yychat.server.view.StartServer;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,17 +12,17 @@ import java.util.concurrent.Executors;
  * TCP服务器控制类，用于文件传输
  */
 public class YYChatTCPServer {
-    private static final int TCP_PORT = 3457; // TCP端口，可配置
     private ServerSocket serverSocket;
     private ExecutorService threadPool;
     private boolean running = false;
 
     public YYChatTCPServer() {
         try {
-            serverSocket = new ServerSocket(TCP_PORT);
+            int tcp_port = StartServer.getServerConfig().getServer_port_tcp();
+            serverSocket = new ServerSocket(tcp_port);
             threadPool = Executors.newCachedThreadPool();
             running = true;
-            System.out.println("TCP服务器启动在端口: " + TCP_PORT);
+            System.out.println("TCP服务器启动在端口: " + tcp_port);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("TCP服务器启动失败");

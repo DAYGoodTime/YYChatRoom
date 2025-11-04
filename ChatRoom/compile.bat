@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+chcp 65001 > nul
 
 :: 检查是否启用调试模式
 if "%1"=="debug" (
@@ -176,16 +177,6 @@ if %GENERATED_CLASSES% equ 0 (
     exit /b 1
 ) else (
     echo ✅ 验证通过：生成了 %GENERATED_CLASSES% 个class文件
-    echo.
-    echo 一些生成的class文件示例:
-    set COUNT_EXAMPLES=0
-    for /r "out\production\ChatRoom" %%c in (*.class) do (
-        if !COUNT_EXAMPLES! lss 5 (
-            echo   - %%~nxc
-            set /a COUNT_EXAMPLES+=1
-        )
-    )
-    if !COUNT_EXAMPLES! geq 5 echo   ... 等
 )
 
 :: 只有在成功生成class文件时才显示成功信息
@@ -196,9 +187,9 @@ if %GENERATED_CLASSES% gtr 0 (
     echo 编译输出目录: out\production\ChatRoom
     echo.
     echo 运行命令:
-    echo   方法1 - 使用启动脚本（推荐）:
-    echo     双击运行: run_server.bat （启动服务器）
-    echo     双击运行: run_client.bat （启动客户端）
+    echo   方法1 - 使用启动脚本 推荐
+    echo     双击运行: run_server.bat 启动服务器
+    echo     双击运行: run_client.bat  启动客户端
     echo.
     echo   方法2 - 使用命令行:
     echo     java -cp "lib/*;out\production\ChatRoom" com.yychat.server.view.StartServer
@@ -207,9 +198,8 @@ if %GENERATED_CLASSES% gtr 0 (
     echo.
     echo 💡 提示:
     echo   - 如果遇到问题，可以运行: compile.bat debug
-    echo   - 请确保MySQL服务正在运行（数据库名: yychat2022s）
+    echo   - 请确保MySQL服务正在运行
     echo   - 确保端口5678和3457没有被占用
-    echo   - 推荐使用启动脚本，避免复杂的classpath设置
 ) else (
     echo.
     echo ❌ 编译过程有问题，程序终止

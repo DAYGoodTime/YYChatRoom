@@ -2,6 +2,7 @@ package com.yychat.server.util;
 
 import cn.hutool.json.JSONUtil;
 import com.yychat.common.model.*;
+import com.yychat.server.view.StartServer;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -12,15 +13,15 @@ import java.util.Optional;
 
 @SuppressWarnings("CallToPrintStackTrace")
 public class DBUtil {
-    private static final String db_url = "jdbc:mysql://localhost:3306/yychat2022s?useUnicode=true&characterEncoding=utf-8";
-    private static final String db_user = "root";
-    private static final String db_pass = "kel123";
     private static Connection dataBase;
 
     public static boolean connectDB() {
         try {
+            String url = StartServer.getServerConfig().getDatasrouce_url();
+            String user = StartServer.getServerConfig().getDatasource_username();
+            String pass = StartServer.getServerConfig().getDatasource_password();
             Class.forName("com.mysql.cj.jdbc.Driver");
-            dataBase = DriverManager.getConnection(db_url, db_user, db_pass);
+            dataBase = DriverManager.getConnection(url, user, pass);
         } catch (Exception e) {
             System.out.println("数据库连接失败");
             return false;

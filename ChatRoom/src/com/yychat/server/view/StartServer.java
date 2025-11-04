@@ -1,9 +1,16 @@
 package com.yychat.server.view;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.yychat.server.service.AvatarFileManager;
 import com.yychat.server.tcp.YYChatTCPServer;
 import com.yychat.server.udp.YYChatUDPServer;
 import com.yychat.server.util.DBUtil;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 服务器的启动类
@@ -16,9 +23,15 @@ public class StartServer {
     public static YYChatUDPServer getUDPServer() {return udpServer;}
     public static YYChatTCPServer getTCPServer() {return tcpServer;}
 
+    private static ServerConfig serverConfig = new ServerConfig();
+
+    public static ServerConfig getServerConfig() {return serverConfig;}
+
     public static void main(String[] args) {
         System.out.println("=== YYChatRoom 服务器启动 ===");
-
+        // 0. 检查配置文件
+        System.out.println("0. 检查配置文件");
+        checkConfig();
         // 1. 检查数据库连接
         System.out.println("1. 检查数据库连接...");
         if(!DBUtil.connectDB()) {
@@ -50,5 +63,19 @@ public class StartServer {
             tcpServer.stop();
             udpServer.stopServer();
         }));
+    }
+
+    public static void checkConfig(){
+        File config =  new File("config-server.json");
+        if(!config.exists()){
+            System.out.println("文件不存在，正在创建默认配置文件");
+            FileUtil.touch(config);
+            FileUtil.writeUtf8String(JSONUtil.toJsonStr(serverConfig),config);
+        }
+        try{
+            serverConfig = JSONUtil.readJSONObject(config, StandardCharsets.UTF_8).toBean(ServerConfig.class);
+        }catch (Exception e){
+            System.out.println("无法读取配置，使用默认配置");
+        }
     }
 }
