@@ -93,14 +93,14 @@ public class FriendListPanel extends JPanel {
     /**
      * 添加好友到列表
      */
-    public void addNewFriend(String friendName) {
+    public void addNewFriend(User friend) {
         // 检查组件是否已初始化
         if (!this.parent.waitingReady()) {
             System.err.println("好友列表面板尚未初始化，跳过添加好友");
             return;
         }
         try {
-            JLabel label = AvatarService.createUserLabel(new User(friendName, null), createFriendMouseListener());
+            JLabel label = AvatarService.createUserLabel(friend, createFriendMouseListener());
             label.setAlignmentX(Component.LEFT_ALIGNMENT);
             listPanel.add(label);
             listPanel.revalidate();
@@ -154,7 +154,7 @@ public class FriendListPanel extends JPanel {
                             return;
                         }
                         // 创建聊天窗口
-                        SwingUtilities.invokeLater(()->new FriendChat(sender, optionalUser.getData(),chatKey));
+                        SwingUtilities.invokeLater(() -> new FriendChat(sender, optionalUser.getData(), chatKey));
                     }
                 }
             }
@@ -192,19 +192,93 @@ public class FriendListPanel extends JPanel {
     }
 
     /**
+     * 从好友列表中移除好友
+     *
+     * @param friendName 要移除的好友名
+     */
+    public void removeFriendFromList(String friendName) {
+        if (!this.parent.waitingReady()) {
+            System.err.println("好友列表面板尚未初始化，跳过移除好友");
+            return;
+        }
+
+        try {
+            // 找到并移除对应的JLabel
+            Component[] components = listPanel.getComponents();
+            for (Component component : components) {
+                if (component instanceof JLabel) {
+                    JLabel label = (JLabel) component;
+                    if (friendName.equals(label.getText())) {
+                        listPanel.remove(label);
+                        listPanel.revalidate();
+                        listPanel.repaint();
+
+                        // 更新friendLabels数组
+                        if (friendLabels != null) {
+                            friendLabels = Arrays.stream(friendLabels)
+                                    .filter(l -> l != label)
+                                    .toArray(JLabel[]::new);
+                        }
+                        System.out.println("已从好友列表中移除好友: " + friendName);
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("移除好友时发生错误: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * 显示好友右键菜单
      */
     private void showFriendContextMenu(MouseEvent e, String friendName) {
         JPopupMenu contextMenu = new JPopupMenu();
-        // 删除好友菜单项（仅注册事件，未实现）
+        // 删除好友菜单项
         JMenuItem deleteItem = new JMenuItem("删除好友");
         deleteItem.addActionListener(actionEvent -> {
-            // TODO: 实现删除好友功能
-            System.out.println("删除好友功能待实现: " + friendName);
-            JOptionPane.showMessageDialog(this,
-                    "删除好友功能待实现: " + friendName,
-                    "提示",
-                    JOptionPane.INFORMATION_MESSAGE);
+            // 确认删除对话框
+            int result = JOptionPane.showConfirmDialog(
+                    this,
+                    "确定要删除好友 '" + friendName + "' 吗？\n此操作不可撤销。",
+                    "确认删除好友",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (result == JOptionPane.YES_OPTION) {
+                // 在后台线程执行删除操作
+                ClientMain.backgroundThreadPool.execute(() -> {
+                    try {
+                        ServiceResponse<String> response = UserService.getInstance().removeFriend(friendName);
+                        if (!response.isSuccess()) {
+                            SwingUtilities.invokeLater(() ->
+                                    JOptionPane.showMessageDialog(this,
+                                            "删除好友时发生错误：" + response.getMessage(),
+                                            "错误",
+                                            JOptionPane.ERROR_MESSAGE)
+                            );
+                            return;
+                        }
+                        // 删除成功后刷新UI
+                        SwingUtilities.invokeLater(() -> {
+                            removeFriendFromList(friendName); // 刷新好友列表
+                            JOptionPane.showMessageDialog(this,
+                                    "删除好友成功",
+                                    "成功",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                        });
+                    } catch (Exception ex) {
+                        SwingUtilities.invokeLater(() ->
+                                JOptionPane.showMessageDialog(this,
+                                        "删除好友时发生错误：" + ex.getMessage(),
+                                        "错误",
+                                        JOptionPane.ERROR_MESSAGE)
+                        );
+                    }
+                });
+            }
         });
 
         contextMenu.add(deleteItem);

@@ -92,6 +92,9 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.USER_ADD_NEW_FRIEND:
                         UserServiceHandler.handleAddNewFriendResponse(message);
                         break;
+                    case MessageType.USER_REMOVE_FRIEND:
+                        UserServiceHandler.handleRemoveFriendResponse(message);
+                        break;
                     case MessageType.REQUEST_FRIEND_LIST:
                         UserServiceHandler.handleFriendListResponse(message);
                         break;

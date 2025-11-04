@@ -98,6 +98,9 @@ public class ServerReceiverThreadUDP implements Runnable {
                 case MessageType.USER_ADD_NEW_FRIEND:
                     userServiceHandler.handleAddNewFriend(message);
                     break;
+                case MessageType.USER_REMOVE_FRIEND:
+                    userServiceHandler.handleRemoveFriend(message);
+                    break;
                 case MessageType.REQUEST_UNK_USER_LIST:
                     userServiceHandler.handelRequestUnkUsers(message);
                     break;

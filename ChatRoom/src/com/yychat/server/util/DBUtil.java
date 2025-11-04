@@ -155,6 +155,51 @@ public class DBUtil {
         return count;
     }
 
+    /**
+     * 删除好友关系（双向删除）
+     *
+     * @param userName   要删除好友的用户名（发起者）
+     * @param friendName 被删除的好友用户名
+     * @param friendType 好友类型（正常好友/黑名单等）
+     * @return 删除是否成功
+     */
+    public static boolean removeFriendRelation(String userName, String friendName, FriendType friendType) {
+        boolean result = false;
+        int friendTypeCode = friendType.getCode();
+        PreparedStatement statement1 = null;
+        PreparedStatement statement2 = null;
+
+        try {
+            // 删除 userName->friendName 的关系
+            String deleteQuery = "DELETE FROM userRelation WHERE masterUser=? AND slaveUser=? AND relation=?";
+            statement1 = dataBase.prepareStatement(deleteQuery);
+            statement1.setString(1, userName);
+            statement1.setString(2, friendName);
+            statement1.setInt(3, friendTypeCode);
+            int result1 = statement1.executeUpdate();
+            // 只有当两个删除操作都成功时才认为操作成功
+            result = result1 > 0;
+
+            if (result) {
+                System.out.println("成功删除好友关系: " + userName + " <-> " + friendName);
+            } else {
+                System.out.println("删除好友关系失败或关系不存在: " + userName + " <-> " + friendName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("删除好友关系时发生错误: " + e.getMessage());
+        } finally {
+            // 关闭资源
+            try {
+                if (statement1 != null) statement1.close();
+                if (statement2 != null) statement2.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+
     public static long insertChatMessage(String from, String to, String content, LocalDateTime time) {
         String query = "insert into message(sender,receiver,content,sendtime) values(?,?,?,?)";
         PreparedStatement statement = null;

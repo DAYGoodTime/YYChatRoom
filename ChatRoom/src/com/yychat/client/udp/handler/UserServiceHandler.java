@@ -1,6 +1,7 @@
 package com.yychat.client.udp.handler;
 
 import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.UserService;
 import com.yychat.client.view.MainWindow;
@@ -51,7 +52,7 @@ public class UserServiceHandler {
         MainWindow mainWindow = ClientMain.getMainWindow();
         if (mainWindow != null && message.getJson().getBool("success", false)) {
             JOptionPane.showMessageDialog(mainWindow, "添加好友成功！");
-            mainWindow.getFriendListPanel().addNewFriend(message.getContent());
+            mainWindow.getFriendListPanel().addNewFriend(message.getJson().getBean("friend",User.class));
         } else {
             JOptionPane.showMessageDialog(mainWindow, message.getJson().getStr("message", ""), "添加好友失败", JOptionPane.ERROR_MESSAGE);
         }
@@ -93,6 +94,45 @@ public class UserServiceHandler {
         if (mainWindow != null) {
             System.out.println("好友下线通知: " + sender);
             mainWindow.getFriendListPanel().changeFriendIconStatus(sender, false);
+        }
+    }
+
+    public static void handleRemoveFriendResponse(Message message) {
+        if (!message.isJsonMessage() || message.getJson().getBool("success", null) == null) {
+            System.out.println("删除好友响应格式错误");
+            return;
+        }
+
+        JSONObject json = message.getJson();
+        boolean success = json.getBool("success", false);
+        String removedFriend = json.getStr("removedFriend", "");
+        String messageText = json.getStr("message", "");
+
+        MainWindow mainWindow = ClientMain.getMainWindow();
+
+        if (success) {
+            // 删除成功，更新UI
+            if (mainWindow != null && !removedFriend.isEmpty()) {
+                SwingUtilities.invokeLater(() -> {
+                    mainWindow.getFriendListPanel().removeFriendFromList(removedFriend);
+                    JOptionPane.showMessageDialog(mainWindow,
+                        "已成功删除好友：" + removedFriend,
+                        "删除好友",
+                        JOptionPane.INFORMATION_MESSAGE);
+                });
+            }
+            System.out.println("删除好友成功: " + removedFriend);
+        } else {
+            // 删除失败，显示错误信息
+            if (mainWindow != null) {
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(mainWindow,
+                        messageText,
+                        "删除好友失败",
+                        JOptionPane.ERROR_MESSAGE)
+                );
+            }
+            System.out.println("删除好友失败: " + messageText);
         }
     }
 }

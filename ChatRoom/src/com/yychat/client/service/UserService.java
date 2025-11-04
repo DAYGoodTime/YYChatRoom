@@ -68,6 +68,18 @@ public class UserService {
     }
 
     /**
+     * 发送好友请求
+     */
+    public void sendNewFriendRequest(String friendName) {
+        ClientMain.getUDPConnection().sendMessageToServer(
+                Message.builder()
+                        .setMessageType(Message.USER_ADD_NEW_FRIEND)
+                        .setSender(ClientMain.getCurrentUser().getUserName())
+                        .setJsonMessage(new JSONObject().set("friend_name", friendName))
+        );
+    }
+
+    /**
      * 获取用户信息
      *
      * @param username 用户名
@@ -133,5 +145,46 @@ public class UserService {
                         .setSender(ClientMain.getCurrentUserName())
                         .setMessageType(Message.NEW_ONLINE_FRIEND)
         );
+    }
+
+    /**
+     * 删除好友
+     * @param friendName 要删除的好友用户名
+     * @return ServiceResponse结果
+     */
+    public ServiceResponse<String> removeFriend(String friendName) {
+        ServiceResponse<String> serviceResponse = new ServiceResponse<>("");
+
+        if (StrUtil.isEmpty(friendName)) {
+            return serviceResponse.error("好友用户名不能为空");
+        }
+
+        UDPClientConnection conn = ClientMain.getUDPConnection();
+        if (conn == null) {
+            return serviceResponse.error("网络连接不可用");
+        }
+
+        Message message = Message.builder()
+                .setMessageType(MessageType.USER_REMOVE_FRIEND)
+                .setSender(ClientMain.getCurrentUser().getUserName())
+                .setJsonMessage(new JSONObject().set("friend_name", friendName));
+
+        Message response = conn.sendMessageToServerSync(message);
+        if (response == null) {
+            return serviceResponse.error("服务器响应超时");
+        }
+
+        if (!response.isJsonMessage()) {
+            return serviceResponse.error("服务器响应格式异常");
+        }
+
+        JSONObject json = response.getJson();
+        boolean success = json.getBool("success", false);
+
+        if (success) {
+            return serviceResponse.success(json.getStr("message", ""));
+        } else {
+            return serviceResponse.error(json.getStr("message", "删除好友失败"));
+        }
     }
 }

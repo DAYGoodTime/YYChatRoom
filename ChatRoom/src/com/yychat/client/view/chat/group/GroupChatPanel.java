@@ -5,6 +5,7 @@ import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.GroupService;
 import com.yychat.client.service.MessageService;
+import com.yychat.client.service.UserService;
 import com.yychat.client.view.chat.BaseChatPanel;
 import com.yychat.common.model.*;
 
@@ -430,11 +431,7 @@ public class GroupChatPanel extends BaseChatPanel {
     }
 
     private void addFriend(String username) {
-        ClientMain.getUDPConnection().sendMessageToServer(
-                Message.builder()
-                        .setMessageType(Message.USER_ADD_NEW_FRIEND)
-                        .setSender(ClientMain.getCurrentUser().getUserName())
-                        .setContent(username));
+        UserService.getInstance().sendNewFriendRequest(username);
         JOptionPane.showMessageDialog(this, "已发送好友申请", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
 

@@ -1,7 +1,9 @@
 package com.yychat.client.view;
 
+import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
+import com.yychat.client.service.UserService;
 import com.yychat.client.util.ImageIconUtil;
 import com.yychat.client.view.chat.FriendChat;
 import com.yychat.client.view.chat.group.GroupChat;
@@ -348,12 +350,7 @@ public class MainWindow extends JFrame {
         addButton.addActionListener(e -> {
             String newFriendName = JOptionPane.showInputDialog("请输入新好友的名字：");
             if (newFriendName != null) {
-                ClientMain.getUDPConnection().sendMessageToServer(
-                        Message.builder()
-                                .setMessageType(Message.USER_ADD_NEW_FRIEND)
-                                .setSender(ClientMain.getCurrentUser().getUserName())
-                                .setContent(newFriendName)
-                );
+                UserService.getInstance().sendNewFriendRequest(newFriendName);
             }
         });
 

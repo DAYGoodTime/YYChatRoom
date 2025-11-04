@@ -86,14 +86,16 @@ public class UserServiceHandler {
 
     public void handleAddNewFriend(Message message) {
         String sender = message.getSender();
-        String targetUser = message.getContent();
+        String targetUser = message.getJson().getStr("friend_name");
         Message response = Message.builder()
+                .setMessageType(message.getMessageType())
                 .setReceiver(sender)
                 .setSender(SystemUser.Server.getStr());
         JSONObject json = new JSONObject();
         json.set("success", false);
         boolean success = true;
-        if (!DBUtil.hasUser(targetUser)) {
+        User user = DBUtil.getUserInfo(targetUser);
+        if (user == null) {
             json.set("message", "用户不存在");
             success = false;
         }
@@ -104,7 +106,7 @@ public class UserServiceHandler {
         if (success) {
             // 添加好友关系
             DBUtil.insertIntoFriend(sender, targetUser, FriendType.NORMAL);
-            System.out.println("用户 " + sender + " 成功添加好友 " + targetUser);
+            json.set("friend", user);
             json.set("success", true);
         }
         response.setJsonMessage(json);
@@ -135,6 +137,43 @@ public class UserServiceHandler {
                         .set("avatarPath", avatarPath)
                         .set("userName", userName)
                 );
+        udpServer.sendMessageToClient(clientAddress, response, message);
+    }
+
+    /**
+     * 处理删除好友请求
+     */
+    public void handleRemoveFriend(Message message) {
+        String sender = message.getSender();
+        String friendToRemove = message.getJson().getStr("friend_name", "");
+        Message response = Message.builder()
+                .setReceiver(sender)
+                .setSender(SystemUser.Server.getStr())
+                .setMessageType(MessageType.USER_REMOVE_FRIEND);
+        JSONObject json = new JSONObject();
+        json.set("success", false);
+        try {
+            // 验证好友关系是否存在
+            if (!DBUtil.hasUser(friendToRemove)) {
+                json.set("message", "用户不存在");
+            } else if (!DBUtil.isUsersFriend(sender, friendToRemove, FriendType.NORMAL)) {
+                json.set("message", "该用户不是您的好友");
+            } else {
+                // 删除好友关系
+                boolean success = DBUtil.removeFriendRelation(sender, friendToRemove, FriendType.NORMAL);
+                if (success) {
+                    json.set("success", true);
+                    json.set("message", "好友删除成功");
+                    json.set("removedFriend", friendToRemove);
+                } else {
+                    json.set("message", "删除好友失败，请重试");
+                }
+            }
+        } catch (Exception e) {
+            json.set("message", "服务器异常：" + e.getMessage());
+            e.printStackTrace();
+        }
+        response.setJsonMessage(json);
         udpServer.sendMessageToClient(clientAddress, response, message);
     }
 }

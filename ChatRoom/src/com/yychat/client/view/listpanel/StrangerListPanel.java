@@ -2,6 +2,7 @@ package com.yychat.client.view.listpanel;
 
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
+import com.yychat.client.service.UserService;
 import com.yychat.client.view.MainWindow;
 import com.yychat.common.model.Message;
 import com.yychat.common.model.User;
@@ -129,12 +130,7 @@ public class StrangerListPanel extends JPanel {
     private void addStrangerAsFriend(String strangerName) {
         try {
             // 发送添加好友请求
-            ClientMain.getUDPConnection().sendMessageToServer(
-                    Message.builder()
-                            .setMessageType(Message.USER_ADD_NEW_FRIEND)
-                            .setSender(ClientMain.getCurrentUser().getUserName())
-                            .setContent(strangerName)
-            );
+            UserService.getInstance().sendNewFriendRequest(strangerName);
 
             JOptionPane.showMessageDialog(this,
                     "已向 " + strangerName + " 发送好友申请",
