@@ -104,25 +104,22 @@ public class UDPClientReceiverThread extends Thread {
                     case MessageType.GROUP_LEAVE_RESPONSE:
                         GroupServiceHandler.handleLeaveGroupResponse(message);
                         break;
-                    case MessageType.GROUP_INFO_UPDATE_RESPONSE:
-                        GroupServiceHandler.handleUpdateGroupInfoResponse(message);
-                        break;
                     case MessageType.GROUP_DELETE_RESPONSE:
                         GroupServiceHandler.handleDeleteGroupResponse(message);
                         break;
                     case MessageType.GROUP_ADD_MEMBER_RESPONSE:
                         GroupServiceHandler.handleAddMemberResponse(message);
                         break;
-                    case MessageType.GROUP_REMOVE_MEMBER_RESPONSE:
+                    case MessageType.GROUP_REMOVE_MEMBER:
                         GroupServiceHandler.handleRemoveMemberResponse(message);
                         break;
-                    case MessageType.GROUP_TRANSFER_OWNER_RESPONSE:
+                    case MessageType.GROUP_TRANSFER_OWNER:
                         GroupServiceHandler.handleTransferOwnerResponse(message);
                         break;
-                    case MessageType.GROUP_MEMBERS_RESPONSE:
+                    case MessageType.GROUP_MEMBERS:
                         GroupServiceHandler.handleGroupMembersResponse(message);
                         break;
-                    case MessageType.USER_GROUPS_RESPONSE:
+                    case MessageType.USER_GROUPS:
                         GroupServiceHandler.handleUserGroupsResponse(message);
                         break;
                     case MessageType.GROUP_SEARCH_RESPONSE:

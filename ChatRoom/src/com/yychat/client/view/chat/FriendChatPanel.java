@@ -1,37 +1,38 @@
 package com.yychat.client.view.chat;
 
 import cn.hutool.core.io.FileUtil;
-import com.yychat.client.ClientMain;
 import com.yychat.client.service.MessageService;
 import com.yychat.common.model.*;
 
-import javax.swing.*;
 import java.io.File;
 
-public class GroupChat extends BaseChat {
+/**
+ * 好友聊天面板组件
+ * 继承 BaseChatPanel，实现具体的好友聊天逻辑
+ */
+public class FriendChatPanel extends BaseChatPanel {
 
-    private final Group group;
+    private User receiver;
+    protected FriendChat parent;
 
-    public GroupChat(String title, Group group) {
-        super(title, ClientMain.getCurrentUser(),group.getGroupName());
-        this.group = group;
-        updateChatMessages();
-        // 自动滚动到底部（显示最新消息）
-        SwingUtilities.invokeLater(() -> {
-            this.setVisible(true);
-            messageArea.setCaretPosition(messageArea.getDocument().getLength());
-        });
+    public FriendChatPanel(User sender, User receiver, FriendChat parent) {
+        super(sender, parent);
+        this.receiver = receiver;
+        this.parent = parent;
     }
+
     @Override
     protected ServiceResponse<Message> sendTextMessage(String text) {
-        return MessageService.getInstance().sendPlainTextMessageToGroup(sender,group,text);
+        return MessageService.getInstance()
+                .sendPlainTextMessageToUser(sender, receiver, text);
     }
+
     @Override
     protected void sendFileMessage(File file, String message) {
         if (selectedFile == null) return;
         try {
-            ServiceResponse<Message> response = MessageService.getInstance().sendFileMessageToGroup(
-                    sender, group, message, FileUtil.readBytes(file), file.getName());
+            ServiceResponse<Message> response = MessageService.getInstance().sendFileMessageToUser(
+                    sender, receiver, message, FileUtil.readBytes(file), file.getName());
             if (!response.isSuccess()) {
                 appendErrorMessage("文件发送失败: " + response.getMessage());
                 return;
@@ -48,8 +49,11 @@ public class GroupChat extends BaseChat {
 
     @Override
     protected ServiceResponse<Page<ChatMessage>> loadMessageFromHistory() {
-        return MessageService.getInstance().queryGroupMessageHistory(group,++chatHistoryIndex,chatHistoryPageSize);
+        return MessageService.getInstance().queryUserMessageHistory(
+                sender.getUserName(),
+                receiver.getUserName(),
+                ++chatHistoryIndex,
+                chatHistoryPageSize
+        );
     }
-
-
 }

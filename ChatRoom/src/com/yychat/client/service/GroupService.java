@@ -43,17 +43,16 @@ public class GroupService {
                 return serviceResponse.error("头像不存在");
             }
 
-            String currentUsername = ClientMain.getCurrentUserName();
             JSONObject requestData = new JSONObject();
-            requestData.set("group_name", groupName.trim());
+            requestData.set("group_info", new Group(groupName, avatarPath, ClientMain.getCurrentUserName()));
             requestData.set("avatar_file_name", avatarFile.getName());
-            requestData.set("creator_username", currentUsername);
+            requestData.set("request_user", ClientMain.getCurrentUserName());
             requestData.set("update", false);
             Message message = Message.builder()
                     .setMessageType(MessageType.TCP_GROUP_SAVE)
-                    .setSender(currentUsername)
+                    .setSender(ClientMain.getCurrentUserName())
                     .setJsonMessage(requestData)
-                    .setAttachment(FileUtil.readBytes(avatarFile),byte[].class,AttachmentType.GROUP_AVATAR);
+                    .setAttachment(FileUtil.readBytes(avatarFile), byte[].class, AttachmentType.GROUP_AVATAR);
             Optional<Message> response = ClientMain.getTCPConnection().sendMessage(message);
             if (!response.isPresent()) {
                 return serviceResponse.error("服务器失联!");
@@ -159,44 +158,45 @@ public class GroupService {
     /**
      * 更新群组信息
      */
-    public ServiceResponse<Group> updateGroupInfo(int groupId, String groupName, String avatarPath) {
+    public ServiceResponse<Group> updateGroupInfo(Group group, String username) {
         ServiceResponse<Group> serviceResponse = new ServiceResponse<>(new Group());
         try {
             // 参数验证
-            if (groupId <= 0) {
+            if (group.getGroupId() <= 0) {
                 return serviceResponse.error("群组ID无效");
             }
-
-            UDPClientConnection conn = getConnection();
             String currentUsername = ClientMain.getCurrentUserName();
-
             JSONObject requestData = new JSONObject();
-            requestData.set("group_id", groupId);
-            requestData.set("group_name", groupName);
-            requestData.set("avatar_path", avatarPath);
-            requestData.set("requester_username", currentUsername);
-
+            boolean hasAvatar = group.getGroupAvatarPath() != null;
+            if (hasAvatar) {
+                File avatarFile = new File(group.getGroupAvatarPath());
+                if (!avatarFile.exists()) {
+                    return serviceResponse.error("头像不存在");
+                }
+                requestData.set("avatar_file_name", avatarFile.getName());
+            }
+            requestData.set("group_info", group);
+            requestData.set("request_user", username);
+            requestData.set("update", true);
             Message message = Message.builder()
-                    .setMessageType(MessageType.GROUP_INFO_UPDATE)
+                    .setMessageType(MessageType.TCP_GROUP_SAVE)
                     .setSender(currentUsername)
                     .setJsonMessage(requestData);
-
-            Message response = conn.sendMessageToServerSync(message);
-            if (response == null) {
+            if (hasAvatar) {
+                message.setAttachment(FileUtil.readBytes(group.getGroupAvatarPath()), byte[].class, AttachmentType.GROUP_AVATAR);
+            }
+            Optional<Message> optMess = ClientMain.getTCPConnection().sendMessage(message);
+            if (!optMess.isPresent()) {
                 return serviceResponse.error("服务器失联!");
             }
-
-            if (!MessageType.GROUP_INFO_UPDATE_RESPONSE.equals(response.getMessageType()) ||
-                    !response.getJson().getBool("success", false)) {
-                return serviceResponse.error(response.getJson().getStr("message", "更新群组信息失败"));
+            if (!optMess.get().isJsonMessage() || !optMess.get().getJson().getBool("success", false)) {
+                return serviceResponse.error(optMess.get().getJson().getStr("message", "更新群组信息失败"));
             }
-
-            Group group = response.getJson().getBean("data", Group.class);
-            if (!response.isJsonMessage() || group == null) {
+            Group responseGroup = optMess.get().getJson().getBean("data", Group.class);
+            if (responseGroup == null) {
                 return serviceResponse.error("更新群组信息数据异常");
             }
-
-            return serviceResponse.success(group);
+            return serviceResponse.success(responseGroup);
         } catch (Exception e) {
             e.printStackTrace();
             return serviceResponse.error("服务器异常: " + e.getMessage());
@@ -321,7 +321,7 @@ public class GroupService {
                 return serviceResponse.error("服务器失联!");
             }
 
-            if (!MessageType.GROUP_REMOVE_MEMBER_RESPONSE.equals(response.getMessageType()) ||
+            if (!MessageType.GROUP_REMOVE_MEMBER.equals(response.getMessageType()) ||
                     !response.getJson().getBool("success", false)) {
                 return serviceResponse.error(response.getJson().getStr("message", "移除成员失败"));
             }
@@ -366,8 +366,7 @@ public class GroupService {
                 return serviceResponse.error("服务器失联!");
             }
 
-            if (!MessageType.GROUP_TRANSFER_OWNER_RESPONSE.equals(response.getMessageType()) ||
-                    !response.getJson().getBool("success", false)) {
+            if (!response.getJson().getBool("success", false)) {
                 return serviceResponse.error(response.getJson().getStr("message", "转让群主身份失败"));
             }
 
@@ -398,7 +397,7 @@ public class GroupService {
             requestData.set("requester_username", currentUsername);
 
             Message message = Message.builder()
-                    .setMessageType(MessageType.GROUP_MEMBERS_REQUEST)
+                    .setMessageType(MessageType.GROUP_MEMBERS)
                     .setSender(currentUsername)
                     .setJsonMessage(requestData);
 
@@ -407,8 +406,7 @@ public class GroupService {
                 return serviceResponse.error("服务器失联!");
             }
 
-            if (!MessageType.GROUP_MEMBERS_RESPONSE.equals(response.getMessageType()) ||
-                    !response.getJson().getBool("success", false)) {
+            if (!response.getJson().getBool("success", false)) {
                 return serviceResponse.error(response.getJson().getStr("message", "获取群组成员列表失败"));
             }
 
@@ -437,7 +435,7 @@ public class GroupService {
             requestData.set("username", currentUsername);
 
             Message message = Message.builder()
-                    .setMessageType(MessageType.USER_GROUPS_REQUEST)
+                    .setMessageType(MessageType.USER_GROUPS)
                     .setSender(currentUsername)
                     .setJsonMessage(requestData);
 
@@ -446,8 +444,7 @@ public class GroupService {
                 return serviceResponse.error("服务器失联!");
             }
 
-            if (!MessageType.USER_GROUPS_RESPONSE.equals(response.getMessageType()) ||
-                    !response.getJson().getBool("success", false)) {
+            if (!response.getJson().getBool("success", false)) {
                 return serviceResponse.error(response.getJson().getStr("message", "获取用户群组列表失败"));
             }
 

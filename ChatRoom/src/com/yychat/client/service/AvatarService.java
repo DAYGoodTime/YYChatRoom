@@ -6,6 +6,7 @@ import com.yychat.client.ClientMain;
 import com.yychat.common.model.*;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseListener;
 import java.io.File;
@@ -108,7 +109,7 @@ public class AvatarService {
      * @param targetPath 指定路径
      * @return 用户头像，如果获取失败返回null
      */
-    public ImageIcon loadGroupAvatar(String groupName, String targetPath) {
+    public static ImageIcon loadGroupAvatar(String groupName, String targetPath) {
         try {
             // 1. 首先尝试从CurrentUser获取头像地址（如果是当前用户）
             if (targetPath == null) {
@@ -301,4 +302,29 @@ public class AvatarService {
         }
     }
 
+
+    public static String handelSelectAvatarButton(Component dialog,String title) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(title);
+        fileChooser.setFileFilter(new FileNameExtensionFilter(
+                "图片文件 (jpg, jpeg, png, gif)", "jpg", "jpeg", "png", "gif"));
+        int result = fileChooser.showOpenDialog(dialog);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            // 验证文件大小 (5MB限制)
+            long fileSize = selectedFile.length();
+            if (fileSize > 5 * 1024 * 1024) {
+                JOptionPane.showMessageDialog(dialog, "文件大小不能超过5MB", "错误", JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
+            String fileName = selectedFile.getName();
+            // 验证文件格式
+            if (!fileName.matches(Constant.IMAGE_REX)) {
+                JOptionPane.showMessageDialog(dialog, "不支持的文件格式，请选择jpg、jpeg、png或gif格式的图片", "错误", JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
+            return selectedFile.getAbsolutePath();
+        }
+        return null;
+    }
 }

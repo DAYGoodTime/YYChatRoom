@@ -29,21 +29,17 @@ public interface MessageType {
     String GROUP_ADD_MEMBER = "30";         // 添加成员
     String GROUP_ADD_MEMBER_RESPONSE = "31"; // 添加成员响应
     String GROUP_REMOVE_MEMBER = "32";      // 移除成员
-    String GROUP_REMOVE_MEMBER_RESPONSE = "33"; // 移除成员响应
     String GROUP_TRANSFER_OWNER = "34";     // 转让群主
-    String GROUP_TRANSFER_OWNER_RESPONSE = "35"; // 转让群主响应
 
     // 群组查询消息类型
-    String GROUP_MEMBERS_REQUEST = "36";    // 获取群组成员
-    String GROUP_MEMBERS_RESPONSE = "37";   // 群组成员响应
-    String USER_GROUPS_REQUEST = "38";      // 获取用户群组列表
-    String USER_GROUPS_RESPONSE = "39";     // 用户群组列表响应
-    String GROUP_SEARCH_REQUEST = "40";     // 搜索群组
-    String GROUP_SEARCH_RESPONSE = "41";    // 搜索群组响应
+    String GROUP_MEMBERS = "36";              // 获取群组成员
+    String USER_GROUPS = "38";        // 获取用户群组列表
+    String GROUP_SEARCH_REQUEST = "40";       // 搜索群组
+    String GROUP_SEARCH_RESPONSE = "41";      // 搜索群组响应
 
     // 群组聊天消息
     String GROUP_CHAT_MESSAGE = "12";       // 群组聊天消息
-    String GROUP_CHAT_MESSAGE_RESPONSE = "42"; // 群组聊天消息响应
+
 
     // TCP传输消息类型
     String TCP_ACK = "100";// TCP处理确认

@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("CallToPrintStackTrace")
 public class DBUtil {
@@ -319,13 +320,16 @@ public class DBUtil {
      */
     public static List<Group> getUserGroups(String username) {
         List<Group> groups = new ArrayList<>();
-        String query = "SELECT g.group_id, g.group_name, g.group_avatar_path, " +
-                "gm.role, gm.join_time, COUNT(gm2.username) as member_count " +
-                "FROM `groups` g " +
-                "JOIN group_members gm ON g.group_id = gm.group_id " +
-                "LEFT JOIN group_members gm2 ON g.group_id = gm2.group_id " +
-                "WHERE gm.username = ? " +
-                "GROUP BY g.group_id, g.group_name, g.group_avatar_path, gm.role, gm.join_time";
+        String query = "SELECT g.group_id," +
+                "       g.group_name," +
+                "       g.group_avatar_path," +
+                "       g.creator_username," +
+                "       g.create_time," +
+                "       COUNT(gm_all.id) AS member_count " +
+                "FROM `groups` AS g " +
+                "INNER JOIN group_members AS gm_day ON g.group_id = gm_day.group_id AND gm_day.username = ? " +
+                "INNER JOIN group_members AS gm_all ON g.group_id = gm_all.group_id " +
+                "GROUP BY g.group_id;";
         PreparedStatement statement = null;
         try {
             statement = dataBase.prepareStatement(query);
@@ -337,21 +341,9 @@ public class DBUtil {
                 group.setGroupId(rs.getInt("group_id"));
                 group.setGroupName(rs.getString("group_name"));
                 group.setGroupAvatarPath(rs.getString("group_avatar_path"));
-                group.setCreatorUsername(getGroupOwner(rs.getInt("group_id")));
+                group.setCreatorUsername(rs.getString("creator_username"));
                 group.setMemberCount(rs.getInt("member_count"));
-
-                // 获取创建时间（使用第一个成员加入时间作为参考）
-                String creatorQuery = "SELECT join_time FROM group_members WHERE group_id = ? AND role = ?";
-                PreparedStatement creatorStmt = dataBase.prepareStatement(creatorQuery);
-                creatorStmt.setInt(1, rs.getInt("group_id"));
-                creatorStmt.setString(2, GroupMember.ROLE_OWNER);
-                ResultSet creatorRs = creatorStmt.executeQuery();
-                if (creatorRs.next()) {
-                    group.setCreateTime(creatorRs.getTimestamp("join_time").toLocalDateTime());
-                }
-                creatorRs.close();
-                creatorStmt.close();
-
+                group.setCreateTime(rs.getTimestamp("create_time").toLocalDateTime());
                 groups.add(group);
             }
         } catch (Exception e) {
@@ -398,7 +390,8 @@ public class DBUtil {
      */
     public static Group getGroupByName(String groupName) {
         Group group = null;
-        String query = "SELECT group_id,group_name, group_avatar_path,creator_username,member_count,create_time FROM `groups` WHERE group_name = ?";
+        String query = "SELECT group_id,group_name, group_avatar_path,creator_username,member_count,create_time " +
+                "FROM `groups` WHERE group_name = ?";
         PreparedStatement statement = null;
         try {
             statement = dataBase.prepareStatement(query);
@@ -559,7 +552,11 @@ public class DBUtil {
      */
     public static List<GroupMember> getGroupMembers(int groupId) {
         List<GroupMember> members = new ArrayList<>();
-        String query = "SELECT id, username, join_time, role FROM group_members WHERE group_id = ? ORDER BY join_time";
+        String query = "SELECT gm.id, gm.username, gm.join_time, gm.role, u.avatar_path " +
+                "FROM group_members gm " +
+                "LEFT JOIN user u ON gm.username = u.username " +
+                "WHERE gm.group_id = ? " +
+                "ORDER BY gm.join_time";
         PreparedStatement statement = null;
         try {
             statement = dataBase.prepareStatement(query);
@@ -573,6 +570,14 @@ public class DBUtil {
                 member.setUsername(rs.getString("username"));
                 member.setJoinTime(rs.getTimestamp("join_time").toLocalDateTime());
                 member.setRole(rs.getString("role"));
+
+                // 创建User对象并设置用户信息
+                User user = new User();
+                user.setUserName(rs.getString("username"));
+                String avatarPath = rs.getString("avatar_path");
+                user.setAvatarPath(avatarPath == null ? Constant.DEFAULT_AVATAR : avatarPath);
+                member.setUser(user);
+
                 members.add(member);
             }
         } catch (Exception e) {
@@ -628,30 +633,6 @@ public class DBUtil {
     }
 
     /**
-     * 获取群主用户名
-     *
-     * @param groupId 群组ID
-     * @return 群主用户名，如果不存在返回null
-     */
-    public static String getGroupOwner(int groupId) {
-        String owner = null;
-        String query = "SELECT username FROM group_members WHERE group_id = ? AND role = ?";
-        PreparedStatement statement = null;
-        try {
-            statement = dataBase.prepareStatement(query);
-            statement.setInt(1, groupId);
-            statement.setString(2, GroupMember.ROLE_OWNER);
-            ResultSet rs = statement.executeQuery();
-            if (rs.next()) {
-                owner = rs.getString("username");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return owner;
-    }
-
-    /**
      * 保存群组消息
      *
      * @param message 消息对象
@@ -693,17 +674,20 @@ public class DBUtil {
      */
     public static List<Group> searchGroups(String keyword) {
         List<Group> groups = new ArrayList<>();
-        String query = "SELECT DISTINCT g.group_id, g.group_name, g.group_avatar_path, " +
-                "COUNT(gm.username) as member_count " +
-                "FROM `groups` g " +
-                "LEFT JOIN group_members gm ON g.group_id = gm.group_id " +
-                "WHERE g.group_name LIKE ? " +
-                "GROUP BY g.group_id, g.group_name, g.group_avatar_path " +
-                "ORDER BY member_count DESC";
+        String query = "SELECT g.group_id," +
+                "       g.group_name," +
+                "       g.group_avatar_path," +
+                "       g.creator_username," +
+                "       g.create_time," +
+                "       COUNT(gm_all.id) AS member_count " +
+                "FROM `groups` AS g " +
+                "INNER JOIN group_members AS gm_all ON g.group_id = gm_all.group_id " +
+                "where group_name LIKE ?" +
+                "GROUP BY g.group_id;";
         PreparedStatement statement = null;
         try {
             statement = dataBase.prepareStatement(query);
-            statement.setString(1, "%" + keyword + "%");
+            statement.setString(1, keyword + "%");
             ResultSet rs = statement.executeQuery();
 
             while (rs.next()) {
@@ -711,8 +695,9 @@ public class DBUtil {
                 group.setGroupId(rs.getInt("group_id"));
                 group.setGroupName(rs.getString("group_name"));
                 group.setGroupAvatarPath(rs.getString("group_avatar_path"));
-                group.setCreatorUsername(getGroupOwner(rs.getInt("group_id")));
+                group.setCreatorUsername(rs.getString("creator_username"));
                 group.setMemberCount(rs.getInt("member_count"));
+                group.setCreateTime(rs.getTimestamp("create_time").toLocalDateTime());
                 groups.add(group);
             }
         } catch (Exception e) {
@@ -897,5 +882,34 @@ public class DBUtil {
             e.printStackTrace();
         }
         return hasUser;
+    }
+
+    /**
+     * 获取群当中的群成员
+     *
+     * @param groupId  群id
+     * @param username 用户名
+     */
+    public static Optional<GroupMember> getGroupMember(int groupId, String username) {
+        String query = "SELECT id,role,join_time FROM group_members WHERE group_id = ?  AND username = ?";
+        PreparedStatement statement;
+        try {
+            statement = dataBase.prepareStatement(query);
+            statement.setInt(1, groupId);
+            statement.setString(2, username);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                GroupMember member = new GroupMember();
+                member.setGroupId(groupId);
+                member.setUsername(username);
+                member.setId(rs.getLong("id"));
+                member.setRole(rs.getString("role"));
+                member.setJoinTime(rs.getTimestamp("join_time").toLocalDateTime());
+                return Optional.of(member);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
     }
 }

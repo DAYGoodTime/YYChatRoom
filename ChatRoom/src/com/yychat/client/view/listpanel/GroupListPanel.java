@@ -4,7 +4,7 @@ import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.GroupService;
 import com.yychat.client.util.ImageIconUtil;
 import com.yychat.client.view.MainWindow;
-import com.yychat.client.view.chat.GroupChat;
+import com.yychat.client.view.chat.group.GroupChat;
 import com.yychat.common.model.Constant;
 import com.yychat.common.model.Group;
 import com.yychat.common.model.ServiceResponse;
@@ -398,7 +398,7 @@ public class GroupListPanel extends JPanel {
 
         // 头像选择按钮事件
         selectAvatarButton.addActionListener(e -> {
-            String avatarPath = handelSelectAvatarButton(dialog);
+            String avatarPath = AvatarService.handelSelectAvatarButton(dialog,"选择群组头像");
             if (avatarPath != null) {
                 selectedGroupAvatarPath = avatarPath;
                 loadAvatarPreview(avatarPreviewLabel, avatarPath);
@@ -432,31 +432,6 @@ public class GroupListPanel extends JPanel {
         cancelButton.addActionListener(e -> dialog.dispose());
 
         dialog.setVisible(true);
-    }
-
-    public String handelSelectAvatarButton(JDialog dialog) {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("选择群组头像");
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-                "图片文件 (jpg, jpeg, png, gif)", "jpg", "jpeg", "png", "gif"));
-        int result = fileChooser.showOpenDialog(dialog);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            // 验证文件大小 (5MB限制)
-            long fileSize = selectedFile.length();
-            if (fileSize > 5 * 1024 * 1024) {
-                JOptionPane.showMessageDialog(dialog, "文件大小不能超过5MB", "错误", JOptionPane.ERROR_MESSAGE);
-                return null;
-            }
-            String fileName = selectedFile.getName();
-            // 验证文件格式
-            if (!fileName.matches(Constant.IMAGE_REX)) {
-                JOptionPane.showMessageDialog(dialog, "不支持的文件格式，请选择jpg、jpeg、png或gif格式的图片", "错误", JOptionPane.ERROR_MESSAGE);
-                return null;
-            }
-            return selectedFile.getAbsolutePath();
-        }
-        return null;
     }
 
     /**

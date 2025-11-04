@@ -8,6 +8,7 @@ import com.yychat.server.util.DBUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 服务器端群组服务类
@@ -27,37 +28,37 @@ public class GroupService {
     /**
      * 创建群组
      */
-    public ServiceResponse<Group> createGroup(String groupName, String creatorUsername, String avatarPath) {
+    public ServiceResponse<Group> createGroup(Group group) {
         ServiceResponse<Group> serviceResponse = new ServiceResponse<>(new Group());
         try {
             // 参数验证
-            if (groupName == null || groupName.trim().isEmpty()) {
+            if (group.getGroupName() == null || group.getGroupName().trim().isEmpty()) {
                 return serviceResponse.error("群组名称不能为空");
             }
 
-            if (creatorUsername == null || creatorUsername.trim().isEmpty()) {
+            if (group.getCreatorUsername() == null || group.getCreatorUsername().trim().isEmpty()) {
                 return serviceResponse.error("创建者用户名不能为空");
             }
-            if(DBUtil.hasGroup(groupName)){
+            if (DBUtil.hasGroup(group.getGroupName())) {
                 return serviceResponse.error("该群名已被使用");
             }
 
             // 使用默认头像路径
-            String groupAvatarPath = avatarPath != null ? avatarPath : Constant.DEFAULT_AVATAR;
+            String groupAvatarPath = group.getGroupAvatarPath() != null ? group.getGroupAvatarPath() : Constant.DEFAULT_AVATAR;
 
             // 创建群组对象
-            Group group = new Group();
-            group.setGroupName(groupName.trim());
-            group.setGroupAvatarPath(groupAvatarPath);
-            group.setCreatorUsername(creatorUsername);
-            group.setCreateTime(java.time.LocalDateTime.now());
+            Group groupResponse = new Group();
+            groupResponse.setGroupName(group.getGroupName());
+            groupResponse.setGroupAvatarPath(groupAvatarPath);
+            groupResponse.setCreatorUsername(group.getCreatorUsername());
+            groupResponse.setCreateTime(java.time.LocalDateTime.now());
 
             // 调用数据库操作
-            int groupId = DBUtil.createGroup(group);
+            int groupId = DBUtil.createGroup(groupResponse);
             if (groupId > 0) {
-                group.setGroupId(groupId);
-                group.setMemberCount(1);
-                return serviceResponse.success(group);
+                groupResponse.setGroupId(groupId);
+                groupResponse.setMemberCount(1);
+                return serviceResponse.success(groupResponse);
             } else {
                 return serviceResponse.error("群组创建失败");
             }
@@ -154,45 +155,42 @@ public class GroupService {
     /**
      * 更新群组信息
      */
-    public ServiceResponse<Group> updateGroupInfo(int groupId, String groupName, String avatarPath, String requesterUsername) {
+    public ServiceResponse<Group> updateGroupInfo(Group group, String username) {
         ServiceResponse<Group> serviceResponse = new ServiceResponse<>(new Group());
         try {
             // 参数验证
-            if (groupId <= 0) {
+            if (group.getGroupId() <= 0) {
                 return serviceResponse.error("群组ID无效");
             }
 
-            if (requesterUsername == null || requesterUsername.trim().isEmpty()) {
+            if (username == null || username.trim().isEmpty()) {
                 return serviceResponse.error("请求者用户名不能为空");
             }
 
             // 检查群组是否存在
-            Group group = DBUtil.getGroupById(groupId);
-            if (group == null) {
+            Group group2 = DBUtil.getGroupById(group.getGroupId());
+            if (group2 == null) {
                 return serviceResponse.error("群组不存在");
             }
-
             // 权限检查：只有群主和管理员可以更新群组信息
-            if (!isGroupOwner(groupId, requesterUsername) && !isGroupAdmin(groupId, requesterUsername)) {
+            if (!isGroupOwner(group.getGroupId(), username) && !isGroupAdmin(group.getGroupId(), username)) {
                 return serviceResponse.error("权限不足，只有群主和管理员可以更新群组信息");
             }
 
             // 验证群组名称
-            if (groupName != null && !groupName.trim().isEmpty()) {
-                group.setGroupName(groupName.trim());
+            if (group.getGroupName() != null && !group.getGroupName().trim().isEmpty()) {
+                group2.setGroupName(group.getGroupName());
             }
 
             // 设置头像路径
-            if (avatarPath != null && !avatarPath.trim().isEmpty()) {
-                group.setGroupAvatarPath(avatarPath);
+            if (group.getGroupAvatarPath() != null && !group.getGroupAvatarPath().trim().isEmpty()) {
+                group2.setGroupAvatarPath(group.getGroupAvatarPath());
             }
 
             // 更新群组信息
-            boolean success = DBUtil.updateGroupInfo(group);
+            boolean success = DBUtil.updateGroupInfo(group2);
             if (success) {
-                Group updatedGroup = DBUtil.getGroupById(groupId);
-                updatedGroup.setMemberCount(DBUtil.getGroupMemberCount(groupId));
-                return serviceResponse.success(updatedGroup);
+                return serviceResponse.success(group2);
             } else {
                 return serviceResponse.error("群组信息更新失败");
             }
@@ -487,8 +485,8 @@ public class GroupService {
      */
     private boolean isGroupOwner(int groupId, String username) {
         try {
-            String owner = DBUtil.getGroupOwner(groupId);
-            return owner != null && owner.equals(username);
+            Optional<GroupMember> optGM = DBUtil.getGroupMember(groupId, username);
+            return optGM.map(GroupMember::isOwner).orElse(false);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -500,10 +498,8 @@ public class GroupService {
      */
     private boolean isGroupAdmin(int groupId, String username) {
         try {
-            List<GroupMember> members = DBUtil.getGroupMembers(groupId);
-            return members.stream()
-                    .filter(member -> username.equals(member.getUsername()))
-                    .anyMatch(GroupMember::isAdmin);
+            Optional<GroupMember> optGM = DBUtil.getGroupMember(groupId, username);
+            return optGM.map(GroupMember::isAdmin).orElse(false);
         } catch (Exception e) {
             e.printStackTrace();
             return false;

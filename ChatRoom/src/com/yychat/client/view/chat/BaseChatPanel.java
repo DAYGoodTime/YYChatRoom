@@ -6,7 +6,6 @@ import cn.hutool.json.JSONObject;
 import com.yychat.client.ClientMain;
 import com.yychat.client.service.AvatarService;
 import com.yychat.client.service.MessageService;
-import com.yychat.client.util.ImageIconUtil;
 import com.yychat.common.model.*;
 import com.yychat.common.util.StringUtil;
 import com.yychat.common.util.ThumbnailGenerator;
@@ -17,27 +16,27 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class BaseChat extends JFrame implements KeyListener {
+/**
+ * 聊天面板组件基类
+ * 继承 JPanel，专注于聊天逻辑，移除了窗口相关操作
+ * 子类需要实现消息发送的具体逻辑
+ */
+public abstract class BaseChatPanel extends JPanel implements KeyListener {
     protected JButton sendButton = new JButton("发送");
     protected JButton sendFileButton = new JButton("上传文件");
-    protected JTextPane messageArea = new JTextPane(); // 使用JTextPane替代JTextArea以支持组件插入
+    public JTextPane messageArea = new JTextPane(); // 使用JTextPane替代JTextArea以支持组件插入
     protected JTextField messageInputField;
-
     //发送者
     protected User sender;
-    protected String chatKey;//用来从map获取窗口的key
-
     // 文件选择显示面板
     protected JPanel fileSelectionPanel = null;
-    //窗口标题
-    protected String chatTitle = "默认聊天窗口";
     //已选择的文件
     protected File selectedFile = null;
 
@@ -46,14 +45,14 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     protected long total = 0;
     protected ArrayList<ChatMessage> chatHistory = new ArrayList<>();
 
-    public BaseChat(String title, User sender, String chatKey) {
-        this.setVisible(false);//在加载完之前先不显示
+    private JFrame parentFrame;
+
+    public BaseChatPanel(User sender,JFrame parentFrame) {
         this.sender = sender;
-        this.chatKey = chatKey;
-        this.chatTitle = title;
-        //初始化UI
-        initUI();
-        //初始化监听器
+        this.parentFrame = parentFrame;
+        // 初始化UI
+        initChatUI();
+        // 初始化监听器
         initListener();
     }
 
@@ -64,8 +63,8 @@ public abstract class BaseChat extends JFrame implements KeyListener {
 
     protected abstract ServiceResponse<Page<ChatMessage>> loadMessageFromHistory();
 
-    //初始化UI
-    public void initUI() {
+    // 初始化聊天UI
+    public void initChatUI() {
         // 设置文本区域为支持多色显示和组件插入
         messageArea.setEditable(false);
         messageArea.setBackground(Color.WHITE);
@@ -92,23 +91,15 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         sendPanel.add(sendButton);
         sendPanel.add(sendFileButton);
 
-        this.add(mainPanel, BorderLayout.CENTER);
-        this.add(sendPanel, BorderLayout.SOUTH);
+        mainPanel.add(sendPanel, BorderLayout.SOUTH);
 
-        this.setSize(480, 420); // 稍微增加高度以容纳文件选择区域
-        this.setLocationRelativeTo(null);
-        this.setTitle(chatTitle);
-        this.setIconImage(ImageIconUtil.getWindowIcon().getImage());
-
-        // 在setVisible(true)之前添加
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setResizable(true);
+        // 设置面板布局
+        setLayout(new BorderLayout());
+        add(mainPanel, BorderLayout.CENTER);
 
         // 优化文本区域滚动
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        this.setVisible(true);
     }
 
     //初始化监听器
@@ -140,8 +131,9 @@ public abstract class BaseChat extends JFrame implements KeyListener {
             JFileChooser fileChooser = new JFileChooser();
             // 设置文件选择器为只选择文件（不是目录）
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            // 显示文件选择对话框
-            int result = fileChooser.showOpenDialog(this);
+            // 显示文件选择对话框，需要找到父窗口
+            Component parent = SwingUtilities.getWindowAncestor(this);
+            int result = fileChooser.showOpenDialog(parent);
             if (result == JFileChooser.APPROVE_OPTION) {
                 // 用户选择了文件
                 selectedFile = fileChooser.getSelectedFile();
@@ -465,11 +457,12 @@ public abstract class BaseChat extends JFrame implements KeyListener {
      * 显示图片查看器
      */
     protected void showImageViewer(JSONObject contentJson, String fileName, int originalWidth, int originalHeight) {
+        // 找到父窗口
         // 创建一个图片查看器对话框
-        JDialog imageDialog = new JDialog(this, "图片查看 - " + fileName, true);
+        JDialog imageDialog = new JDialog(parentFrame, "图片查看 - " + fileName, true);
         imageDialog.setLayout(new BorderLayout());
         imageDialog.setSize(Math.min(originalWidth + 100, 800), Math.min(originalHeight + 150, 700));
-        imageDialog.setLocationRelativeTo(this);
+        imageDialog.setLocationRelativeTo(parentFrame);
 
         // 状态标签（显示下载状态）
         JLabel statusLabel = new JLabel("正在加载原图，请稍候...");
@@ -528,19 +521,20 @@ public abstract class BaseChat extends JFrame implements KeyListener {
      */
     protected void downloadOriginalImage(JSONObject contentJson, JLabel imageLabel, JScrollPane scrollPane, JPanel loadingPanel,
                                          JLabel statusLabel, JButton saveButton, String fileName, JDialog imageDialog) {
-        final BaseChat friendChatInstance = this;
+        final BaseChatPanel chatPanelInstance = this;
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
         // 使用SwingWorker在后台线程中下载文件
         SwingWorker<byte[], Void> worker = new SwingWorker<byte[], Void>() {
             @Override
             protected byte[] doInBackground() {
                 String fileMd5 = contentJson.getStr("file_md5", "");
                 if (fileMd5.isEmpty()) {
-                    JOptionPane.showMessageDialog(friendChatInstance, "下载失败", "无法获取文件MD5", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(parentWindow, "下载失败", "无法获取文件MD5", JOptionPane.ERROR_MESSAGE);
                     return null;
                 }
                 ServiceResponse<byte[]> response = MessageService.getInstance().downloadFileFromServer(fileMd5);
                 if (!response.isSuccess()) {
-                    JOptionPane.showMessageDialog(friendChatInstance, "下载失败", response.getMessage(), JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(parentWindow, "下载失败", response.getMessage(), JOptionPane.ERROR_MESSAGE);
                     return null;
                 }
                 return response.getData();
@@ -562,7 +556,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
                         int dialogWidth = Math.min(originalIcon.getIconWidth() + 100, 1000);
                         int dialogHeight = Math.min(originalIcon.getIconHeight() + 150, 800);
                         imageDialog.setSize(dialogWidth, dialogHeight);
-                        imageDialog.setLocationRelativeTo(friendChatInstance);
+                        imageDialog.setLocationRelativeTo(parentWindow);
 
                         statusLabel.setText("原图加载完成 - " + originalIcon.getIconWidth() + " x " + originalIcon.getIconHeight());
                         statusLabel.setForeground(new Color(34, 139, 34)); // 绿色表示成功
@@ -801,10 +795,11 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     protected void handelFileDownload(String fileName, String fileMd5) {
         // 这里会实现下载功能
         System.out.println("下载文件: " + fileName + ", MD5: " + fileMd5);
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
         if (cachedDownloadFileBytes == null) {
             ServiceResponse<byte[]> response = MessageService.getInstance().downloadFileFromServer(fileMd5);
             if (!response.isSuccess()) {
-                JOptionPane.showMessageDialog(this, response.getMessage(), "下载文件失败", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(parentWindow, response.getMessage(), "下载文件失败", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             cachedDownloadFileBytes = response.getData();
@@ -819,7 +814,7 @@ public abstract class BaseChat extends JFrame implements KeyListener {
         saveFileChooser.setSelectedFile(new File(fileName));
 
         // 显示保存对话框
-        int userSelection = saveFileChooser.showSaveDialog(this);
+        int userSelection = saveFileChooser.showSaveDialog(parentWindow);
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = saveFileChooser.getSelectedFile();
@@ -829,14 +824,14 @@ public abstract class BaseChat extends JFrame implements KeyListener {
                 FileUtil.writeBytes(cachedDownloadFileBytes, fileToSave);
 
                 // 显示保存成功消息
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(parentWindow,
                         "文件已成功保存到:\n" + fileToSave.getAbsolutePath(),
                         "下载完成",
                         JOptionPane.INFORMATION_MESSAGE);
                 cachedDownloadFileBytes = null;
             } catch (Exception e) {
                 // 处理保存失败的情况
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(parentWindow,
                         "保存文件时发生错误:\n" + e.getMessage(),
                         "保存失败",
                         JOptionPane.ERROR_MESSAGE);
@@ -848,30 +843,19 @@ public abstract class BaseChat extends JFrame implements KeyListener {
     }
 
     /**
-     * 高亮当前聊天窗口（从最小化状态恢复并激活）
+     * 高亮当前聊天面板（让输入框获得焦点）
+     * 窗口高亮功能现在由 BaseChatFrame 处理
      */
-    public void highlightChatWindow() {
+    public void highlightChatPanel() {
         // 使用SwingUtilities确保在EDT中执行UI操作
         SwingUtilities.invokeLater(() -> {
             try {
-                // 1. 如果窗口被最小化，将其恢复
-                if (getState() == JFrame.ICONIFIED) {
-                    setState(JFrame.NORMAL);
-                }
-                // 2. 确保窗口可见
-                if (!isVisible()) {
-                    setVisible(true);
-                }
-                // 3. 将窗口移到前台
-                toFront();
-                // 4. 请求窗口获得焦点
-                requestFocus();
-                // 5. 如果是聊天窗口，让输入框获得焦点
+                // 让输入框获得焦点
                 if (messageInputField != null) {
                     messageInputField.requestFocusInWindow();
                 }
             } catch (Exception e) {
-                System.err.println("高亮聊天窗口时出错: " + e.getMessage());
+                System.err.println("高亮聊天面板时出错: " + e.getMessage());
                 e.printStackTrace();
             }
         });

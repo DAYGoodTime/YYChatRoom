@@ -113,9 +113,6 @@ public class ServerReceiverThreadUDP implements Runnable {
                 case MessageType.GROUP_LEAVE_REQUEST:
                     groupServiceHandler.handleLeaveGroupRequest(message);
                     break;
-                case MessageType.GROUP_INFO_UPDATE:
-                    groupServiceHandler.handleUpdateGroupInfoRequest(message);
-                    break;
                 case MessageType.GROUP_DELETE_REQUEST:
                     groupServiceHandler.handleDeleteGroupRequest(message);
                     break;
@@ -128,10 +125,10 @@ public class ServerReceiverThreadUDP implements Runnable {
                 case MessageType.GROUP_TRANSFER_OWNER:
                     groupServiceHandler.handleTransferOwnerRequest(message);
                     break;
-                case MessageType.GROUP_MEMBERS_REQUEST:
+                case MessageType.GROUP_MEMBERS:
                     groupServiceHandler.handleGroupMembersRequest(message);
                     break;
-                case MessageType.USER_GROUPS_REQUEST:
+                case MessageType.USER_GROUPS:
                     groupServiceHandler.handleUserGroupsRequest(message);
                     break;
                 case MessageType.GROUP_SEARCH_REQUEST:

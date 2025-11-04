@@ -29,6 +29,14 @@ public class Group implements Serializable {
         this.createTime = LocalDateTime.now();
     }
 
+    public Group(String groupName, String groupAvatarPath, String creatorUsername) {
+        this.groupName = groupName;
+        this.groupAvatarPath = groupAvatarPath;
+        this.creatorUsername = creatorUsername;
+        this.createTime = LocalDateTime.now();
+        this.memberCount = 0;
+    }
+
     // 完整构造函数
     public Group(int groupId, String groupName, String groupAvatarPath, String creatorUsername,
                  LocalDateTime createTime, int memberCount, List<GroupMember> members) {

@@ -129,41 +129,6 @@ public class GroupServiceHandler {
     }
 
     /**
-     * 处理更新群组信息响应
-     */
-    public static void handleUpdateGroupInfoResponse(Message message) {
-        try {
-            MainWindow mainWindow = ClientMain.getMainWindow();
-            if (mainWindow == null) {
-                return;
-            }
-
-            if (!message.isJsonMessage()) {
-                JOptionPane.showMessageDialog(mainWindow, "更新群组信息响应格式错误", "错误", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (message.getJson().getBool("success", false)) {
-                Group group = message.getJson().getBean("data", Group.class);
-                if (group != null) {
-                    JOptionPane.showMessageDialog(mainWindow, "群组信息更新成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
-
-                    // 更新群组列表显示
-                    updateGroupListDisplay();
-                } else {
-                    JOptionPane.showMessageDialog(mainWindow, "更新群组信息数据异常", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-            } else {
-                String errorMessage = message.getJson().getStr("message", "更新群组信息失败");
-                JOptionPane.showMessageDialog(mainWindow, errorMessage, "更新群组信息失败", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            showErrorMessage("处理更新群组信息响应异常: " + e.getMessage());
-        }
-    }
-
-    /**
      * 处理删除群组响应
      */
     public static void handleDeleteGroupResponse(Message message) {

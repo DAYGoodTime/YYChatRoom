@@ -11,37 +11,33 @@ public class GroupRequestHandler {
 
 
     public static Message handelGroupSaveRequest(Message message) {
-        String groupName = message.getJson().getStr("group_name", "default_group");
+        Group requestGroup = message.getJson().getBean("group_info",Group.class);
         String groupAvatarPath = null;
-        if (message.getAttachmentType().equals(AttachmentType.GROUP_AVATAR)){
+        if (AttachmentType.GROUP_AVATAR.equals(message.getAttachmentType())){
             //有头像文件，需要保存
             String fileName = message.getJson().getStr("avatar_file_name");
             if(StrUtil.isBlank(fileName)){
                 return logError("群组头像地址为空",message);
             }
-            groupAvatarPath = AvatarFileManager.saveGroupAvatarFromBytes(groupName,message.getAttachment(byte[].class),fileName);
+            groupAvatarPath = AvatarFileManager.saveGroupAvatarFromBytes(requestGroup.getGroupName(),message.getAttachment(byte[].class),fileName);
             if(StrUtil.isBlank(groupAvatarPath)){
                 return logError("群组头像保存失败",message);
             }
+            requestGroup.setGroupAvatarPath(groupAvatarPath);
         }
         boolean update = message.getJson().getBool("update",false);
         Group group;
         if(update){
-            //更新群组头像
-            int groupId = message.getJson().getInt("group_id",-1);
-            String requestUsername = message.getJson().getStr("username");
-            ServiceResponse<Group> response = GroupService.getInstance().updateGroupInfo(groupId, groupName, groupAvatarPath, requestUsername);
+            //更新群组
+            String requestUserName = message.getJson().getStr("request_user");
+            ServiceResponse<Group> response = GroupService.getInstance().updateGroupInfo(requestGroup,requestUserName);
             if(!response.isSuccess()){
                 return logError("更新群信息失败",message);
             }
             group = response.getData();
         }else {
             //创建新群组
-            ServiceResponse<Group> response = GroupService.getInstance().createGroup(
-                    groupName,
-                    message.getJson().getStr("creator_username",""),
-                    groupAvatarPath
-            );
+            ServiceResponse<Group> response = GroupService.getInstance().createGroup(requestGroup);
             if(!response.isSuccess()){
                 return logError("群组创建失败 :" +response.getMessage(),message);
             }

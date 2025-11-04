@@ -168,7 +168,7 @@ public class AvatarFileManager {
             String cleanGroupName = sanitizeFileName(group_name);
             String uniqueFileName = cleanGroupName + "_" + System.currentTimeMillis() + "." + extension;
 
-            // 用户头像目录
+            // 群组头像目录
             Path userDir = Paths.get(AVATAR_BASE_DIR, GROUP_AVATAR_DIR);
             Files.createDirectories(userDir);
 

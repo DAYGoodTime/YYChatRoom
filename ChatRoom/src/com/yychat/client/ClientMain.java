@@ -12,6 +12,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,6 +28,8 @@ public class ClientMain {
     private static UDPClientConnection udpConnection;
 
     private static TCPClient tcpClient;
+
+    private static List<User> friendList = new ArrayList<>();
 
     public static void main(String[] args) {
         System.out.println("初始化客户端中");
@@ -124,6 +128,10 @@ public class ClientMain {
         return tcpClient;
     }
 
+    public static List<User> getFriendList() {
+        return friendList;
+    }
+
     //Setter
     public static void setCurrentUser(User currentUser) {
         ClientMain.currentUser = currentUser;
@@ -131,5 +139,9 @@ public class ClientMain {
 
     public static void setMainWindow(MainWindow mainWindow) {
         ClientMain.mainWindow = mainWindow;
+    }
+
+    public static void setFriendList(List<User> friendList) {
+        ClientMain.friendList = friendList;
     }
 }

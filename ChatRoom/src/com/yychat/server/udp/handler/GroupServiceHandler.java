@@ -63,25 +63,6 @@ public class GroupServiceHandler {
     }
 
     /**
-     * 处理群组信息更新请求
-     */
-    public void handleUpdateGroupInfoRequest(Message message) {
-        try {
-            JSONObject requestData = message.getJson();
-            int groupId = requestData.getInt("group_id", 0);
-            String groupName = requestData.getStr("group_name", "");
-            String avatarPath = requestData.getStr("avatar_path", "");
-            String requesterUsername = requestData.getStr("requester_username", "");
-
-            ServiceResponse<Group> response = groupService.updateGroupInfo(groupId, groupName, avatarPath, requesterUsername);
-            buildResponseMessage(response, MessageType.GROUP_INFO_UPDATE_RESPONSE, message.getSender(), message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendErrorResponse(message, MessageType.GROUP_INFO_UPDATE_RESPONSE, "处理群组信息更新请求异常: " + e.getMessage());
-        }
-    }
-
-    /**
      * 处理删除群组请求
      */
     public void handleDeleteGroupRequest(Message message) {
@@ -106,8 +87,8 @@ public class GroupServiceHandler {
         try {
             JSONObject requestData = message.getJson();
             int groupId = requestData.getInt("group_id", 0);
-            String adderUsername = requestData.getStr("adderUsername", "");
-            String targetUsername = requestData.getStr("targetUsername", "");
+            String adderUsername = requestData.getStr("adder_username", "");
+            String targetUsername = requestData.getStr("target_username", "");
 
             ServiceResponse<?> response = groupService.addMember(groupId, adderUsername, targetUsername);
             buildResponseMessage(response, MessageType.GROUP_ADD_MEMBER_RESPONSE, message.getSender(), message);
@@ -123,15 +104,15 @@ public class GroupServiceHandler {
     public void handleRemoveMemberRequest(Message message) {
         try {
             JSONObject requestData = message.getJson();
-            int groupId = requestData.getInt("groupId", 0);
-            String removerUsername = requestData.getStr("removerUsername", "");
-            String targetUsername = requestData.getStr("targetUsername", "");
+            int groupId = requestData.getInt("group_id", 0);
+            String removerUsername = requestData.getStr("remover_username", "");
+            String targetUsername = requestData.getStr("target_username", "");
 
             ServiceResponse<?> response = groupService.removeMember(groupId, removerUsername, targetUsername);
-            buildResponseMessage(response, MessageType.GROUP_REMOVE_MEMBER_RESPONSE, message.getSender(), message);
+            buildResponseMessage(response, MessageType.GROUP_REMOVE_MEMBER, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
-            sendErrorResponse(message, MessageType.GROUP_REMOVE_MEMBER_RESPONSE, "处理移除群组成员请求异常: " + e.getMessage());
+            sendErrorResponse(message, MessageType.GROUP_REMOVE_MEMBER, "处理移除群组成员请求异常: " + e.getMessage());
         }
     }
 
@@ -141,15 +122,15 @@ public class GroupServiceHandler {
     public void handleTransferOwnerRequest(Message message) {
         try {
             JSONObject requestData = message.getJson();
-            int groupId = requestData.getInt("groupId", 0);
-            String currentOwner = requestData.getStr("currentOwner", "");
-            String newOwner = requestData.getStr("newOwner", "");
+            int groupId = requestData.getInt("group_id", 0);
+            String currentOwner = requestData.getStr("current_owner", "");
+            String newOwner = requestData.getStr("new_owner", "");
 
             ServiceResponse<?> response = groupService.transferOwnership(groupId, currentOwner, newOwner);
-            buildResponseMessage(response, MessageType.GROUP_TRANSFER_OWNER_RESPONSE, message.getSender(), message);
+            buildResponseMessage(response, MessageType.GROUP_TRANSFER_OWNER, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
-            sendErrorResponse(message, MessageType.GROUP_TRANSFER_OWNER_RESPONSE, "处理转让群主请求异常: " + e.getMessage());
+            sendErrorResponse(message, MessageType.GROUP_TRANSFER_OWNER, "处理转让群主请求异常: " + e.getMessage());
         }
     }
 
@@ -159,14 +140,14 @@ public class GroupServiceHandler {
     public void handleGroupMembersRequest(Message message) {
         try {
             JSONObject requestData = message.getJson();
-            int groupId = requestData.getInt("groupId", 0);
-            String requesterUsername = requestData.getStr("requesterUsername", "");
+            int groupId = requestData.getInt("group_id", 0);
+            String requesterUsername = requestData.getStr("requester_username", "");
 
             ServiceResponse<List<GroupMember>> response = groupService.getGroupMembers(groupId, requesterUsername);
-            buildResponseMessage(response, MessageType.GROUP_MEMBERS_RESPONSE, message.getSender(), message);
+            buildResponseMessage(response, MessageType.GROUP_MEMBERS, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
-            sendErrorResponse(message, MessageType.GROUP_MEMBERS_RESPONSE, "处理获取群组成员列表请求异常: " + e.getMessage());
+            sendErrorResponse(message, MessageType.GROUP_MEMBERS, "处理获取群组成员列表请求异常: " + e.getMessage());
         }
     }
 
@@ -179,10 +160,10 @@ public class GroupServiceHandler {
             String username = requestData.getStr("username", "");
 
             ServiceResponse<List<Group>> response = groupService.getUserGroups(username);
-            buildResponseMessage(response, MessageType.USER_GROUPS_RESPONSE, message.getSender(), message);
+            buildResponseMessage(response, MessageType.USER_GROUPS, message.getSender(), message);
         } catch (Exception e) {
             e.printStackTrace();
-            sendErrorResponse(message, MessageType.USER_GROUPS_RESPONSE, "处理获取用户群组列表请求异常: " + e.getMessage());
+            sendErrorResponse(message, MessageType.USER_GROUPS, "处理获取用户群组列表请求异常: " + e.getMessage());
         }
     }
 

@@ -144,7 +144,7 @@ public class ServerReceiverThreadTCP implements Runnable {
             synchronized (oos) {
                 oos.writeObject(message);
                 oos.flush();
-                System.out.println("成功发送响应给 " + message.getReceiver());
+//                System.out.println("成功发送响应给 " + message.getReceiver());
             }
         } catch (IOException e) {
             System.err.println("发送响应失败: " + e.getMessage());

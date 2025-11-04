@@ -17,6 +17,7 @@ public class GroupMember implements Serializable {
     private LocalDateTime joinTime;
     private String role;
     private boolean isOnline;
+    private User user;
 
     // 默认构造函数
     public GroupMember() {
@@ -110,6 +111,10 @@ public class GroupMember implements Serializable {
         return isOnline;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     // Setter方法
     public void setId(long id) {
         this.id = id;
@@ -133,6 +138,10 @@ public class GroupMember implements Serializable {
 
     public void setIsOnline(boolean isOnline) {
         this.isOnline = isOnline;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     // 角色判断方法
@@ -167,4 +176,6 @@ public class GroupMember implements Serializable {
     public boolean canTransferOwner() {
         return isOwner();
     }
+
+
 }

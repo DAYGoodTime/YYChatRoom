@@ -1,7 +1,7 @@
 package com.yychat.client.udp.handler;
 
 import com.yychat.client.ClientMain;
-import com.yychat.client.view.chat.GroupChat;
+import com.yychat.client.view.chat.group.GroupChat;
 import com.yychat.common.model.Group;
 import com.yychat.common.model.ServiceResponse;
 import com.yychat.client.service.UserService;
@@ -27,11 +27,12 @@ public class ChatMessageHandler {
             FriendChat chat = MainWindow.getFriendChat(chatKey);
             if (chat == null) {
                 // 创建新的聊天窗口
-                chat = new FriendChat(receiver, sender,chatKey);
+                // 此时会自己加载新的消息。
+                new FriendChat(receiver, sender, chatKey);
+            }else {
+                chat.highlightChatWindow();
+                chat.appendMessage(message,true);
             }
-            final FriendChat finalChat = chat;
-            chat.highlightChatWindow();
-            SwingUtilities.invokeLater(() -> finalChat.appendMessage(message, true));
         } catch (Exception e) {
             System.out.println("处理聊天消息出错");
             e.printStackTrace();

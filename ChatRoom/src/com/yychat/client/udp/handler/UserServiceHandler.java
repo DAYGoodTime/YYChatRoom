@@ -9,6 +9,8 @@ import com.yychat.common.model.Message;
 import com.yychat.common.model.User;
 
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserServiceHandler {
 
@@ -61,7 +63,9 @@ public class UserServiceHandler {
             System.out.println("收到好友列表: " + message.getJson().getJSONArray("list").toJSONString(0));
             new Thread(() -> {
                 //初始化的时候不要影响原线程
-                mainWindow.getFriendListPanel().setFriendList(message.getJson().getJSONArray("list").toList(User.class));
+                List<User> friendList = message.getJson().getJSONArray("list").toList(User.class);
+                if(friendList == null) friendList = new ArrayList<>();
+                mainWindow.getFriendListPanel().setFriendList(friendList);
             }).start();
         }
     }

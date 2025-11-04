@@ -229,43 +229,18 @@ public class AvatarSelector extends JDialog {
      * 上传自定义头像
      */
     private void onUploadAvatar() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-                "图片文件 (*.jpg, *.jpeg, *.png, *.gif)", "jpg", "jpeg", "png", "gif"));
-
-        int result = fileChooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            String fileName = selectedFile.getName().toLowerCase();
-
-            // 验证文件格式
-            if (!fileName.matches(Constant.IMAGE_REX)) {
-                JOptionPane.showMessageDialog(this,
-                        "仅支持 JPG、PNG、GIF、WEBP 格式的图片文件！",
-                        "格式错误",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // 验证文件大小（假设限制为5MB）
-            if (selectedFile.length() > MAX_FILE_SIZE) {
-                JOptionPane.showMessageDialog(this,
-                        "图片文件大小不能超过 5MB！",
-                        "文件过大",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            try {
-                selectedAvatarPath = selectedFile.getAbsolutePath();
+        String avatarPath = AvatarService.handelSelectAvatarButton(this, "选择用户头像");
+        try {
+            if (avatarPath != null) {
+                selectedAvatarPath = avatarPath;
                 updatePreview(selectedAvatarPath);
-            } catch (Exception e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this,
-                        "头像选择失败：" + e.getLocalizedMessage(),
-                        "头像选择失败",
-                        JOptionPane.ERROR_MESSAGE);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "头像选择失败：" + e.getLocalizedMessage(),
+                    "头像选择失败",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 

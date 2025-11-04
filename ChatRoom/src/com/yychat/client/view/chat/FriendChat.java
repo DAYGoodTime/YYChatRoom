@@ -1,66 +1,47 @@
 package com.yychat.client.view.chat;
 
-
-import cn.hutool.core.io.FileUtil;
-import com.yychat.client.service.MessageService;
 import com.yychat.client.view.MainWindow;
-import com.yychat.common.model.*;
+import com.yychat.common.model.Message;
+import com.yychat.common.model.User;
 
 import javax.swing.*;
-import java.io.File;
 
-public class FriendChat extends BaseChat {
+/**
+ * 好友聊天窗口
+ * 继承 BaseChatFrame，使用简单的好友聊天布局
+ */
+public class FriendChat extends BaseChatFrame implements ChatMessageWindow {
+
     protected User receiver;
+    protected FriendChatPanel friendChatPanel;
 
     public FriendChat(User sender, User receiver, String chatKey) {
-        super("与 " + receiver.getUserName() + " 的聊天界面", sender, chatKey);
+        super("与 " + receiver.getUserName() + " 的聊天界面", sender);
         this.receiver = receiver;
+        // 创建好友聊天面板
+        this.friendChatPanel = new FriendChatPanel(sender, receiver,this);
+        // 初始化窗口
+        initializeFrame();
+        setupLayout();
         // 将聊天窗口存储到FriendList的map中
         MainWindow.getFriendChatMap().put(chatKey, this);
-        //尝试加载历史信息
-        updateChatMessages();
+        // 尝试加载历史信息
+        friendChatPanel.updateChatMessages();
         // 自动滚动到底部（显示最新消息）
         SwingUtilities.invokeLater(() -> {
-            this.setVisible(true);
-            messageArea.setCaretPosition(messageArea.getDocument().getLength());
+            friendChatPanel.messageArea.setCaretPosition(friendChatPanel.messageArea.getDocument().getLength());
         });
+
     }
 
     @Override
-    protected ServiceResponse<Message> sendTextMessage(String text) {
-        return MessageService.getInstance()
-                .sendPlainTextMessageToUser(sender, receiver, text);
-    }
-
-    @Override
-    protected void sendFileMessage(File file, String message) {
-        if (selectedFile == null) return;
-        try {
-            ServiceResponse<Message> response = MessageService.getInstance().sendFileMessageToUser(
-                    sender, receiver, message, FileUtil.readBytes(file), file.getName());
-            if (!response.isSuccess()) {
-                appendErrorMessage("文件发送失败: " + response.getMessage());
-                return;
-            }
-            Message responseMessage = response.getData();
-            appendMessage(responseMessage, false);
-            // 清除文件选择
-            clearSelectedFile();
-        } catch (Exception e) {
-            // 显示发送失败消息
-            appendErrorMessage("文件发送失败: " + e.getMessage());
-        }
+    protected JPanel createChatPanel() {
+        return friendChatPanel;
     }
 
 
     @Override
-    protected ServiceResponse<Page<ChatMessage>> loadMessageFromHistory() {
-        return MessageService.getInstance().queryUserMessageHistory(
-                sender.getUserName(),
-                receiver.getUserName(),
-                ++chatHistoryIndex,
-                chatHistoryPageSize
-        );
+    public void appendMessage(Message message, boolean received) {
+        friendChatPanel.appendMessage(message,received);
     }
-
 }
